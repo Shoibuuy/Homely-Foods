@@ -344,6 +344,45 @@ export function SiteHeader() {
                         My Profile
                       </Link>
 
+                      <Link
+                        href="/points"
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          pathname === "/points"
+                            ? "bg-gold/10 text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        HomelyPoints
+                      </Link>
+
+                      <Link
+                        href="/notifications"
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          pathname === "/notifications"
+                            ? "bg-gold/10 text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        Notifications
+                      </Link>
+
+                      <Link
+                        href="/addresses"
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          pathname === "/addresses"
+                            ? "bg-gold/10 text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        My Addresses
+                      </Link>
+
                       {safeUser.role === "admin" ? (
                         <Link
                           href="/admin"

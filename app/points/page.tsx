@@ -291,16 +291,17 @@ export default function PointsPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-8 bg-muted/50">
-            <TabsTrigger value="overview" className="gap-2">
+          <TabsList className="mb-8 grid w-full grid-cols-3 bg-muted/50 sm:w-auto sm:grid-cols-none sm:flex">
+            <TabsTrigger value="overview" className="gap-1.5 text-xs sm:gap-2 sm:text-sm">
               <Coins className="h-4 w-4" />
-              Overview
+              <span className="hidden xs:inline">Overview</span>
+              <span className="xs:hidden">Home</span>
             </TabsTrigger>
-            <TabsTrigger value="redeem" className="gap-2">
+            <TabsTrigger value="redeem" className="gap-1.5 text-xs sm:gap-2 sm:text-sm">
               <Gift className="h-4 w-4" />
               Redeem
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
+            <TabsTrigger value="history" className="gap-1.5 text-xs sm:gap-2 sm:text-sm">
               <History className="h-4 w-4" />
               History
             </TabsTrigger>

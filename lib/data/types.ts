@@ -99,15 +99,6 @@ export interface Order {
 
 export type HPTransactionType = "earned" | "redeemed" | "bonus";
 
-export interface HPTransaction {
-  id: string;
-  userId: string;
-  amount: number;
-  type: HPTransactionType;
-  description: string;
-  createdAt: string;
-}
-
 export type UserRole = "customer" | "admin";
 
 export interface User {

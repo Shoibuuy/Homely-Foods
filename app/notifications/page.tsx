@@ -202,7 +202,7 @@ export default function NotificationsPage() {
 
       <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
         {/* Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
           {(["order", "points", "reservation", "general"] as NotificationType[]).map((type) => {
             const count = notifications.filter((n) => n.type === type).length;
             const colors = typeColors[type];
@@ -219,12 +219,12 @@ export default function NotificationsPage() {
                     : "border-border bg-card hover:border-gold/30"
                 )}
               >
-                <div className={cn("flex h-10 w-10 items-center justify-center rounded-full", colors.bg)}>
-                  <Icon className={cn("h-5 w-5", colors.icon)} />
+                <div className={cn("flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full shrink-0", colors.bg)}>
+                  <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", colors.icon)} />
                 </div>
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground">{typeLabels[type]}</p>
-                  <p className="text-lg font-bold text-foreground">{count}</p>
+                <div className="text-left min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{typeLabels[type]}</p>
+                  <p className="text-base sm:text-lg font-bold text-foreground">{count}</p>
                 </div>
               </button>
             );
