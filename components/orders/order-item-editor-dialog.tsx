@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -136,12 +137,12 @@ export function OrderItemEditorDialog({
 <DialogContent className="max-w-xl overflow-hidden rounded-3xl border border-border/70 p-0 shadow-[0_20px_60px_rgba(0,0,0,0.12)] max-h-[90vh]">
 <div className="max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader className="mb-5 space-y-1 text-left">
-            <DialogTitle className="font-serif text-xl font-bold text-foreground sm:text-2xl">
-              {isViewOnly ? "View Item" : "Customize Item"}
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Review quantity, add-ons, and special instructions.
-            </p>
+<DialogTitle className="font-serif text-xl font-bold text-foreground sm:text-2xl">
+                {isViewOnly ? "View Item" : "Customize Item"}
+              </DialogTitle>
+              <DialogDescription>
+                Review quantity, add-ons, and special instructions.
+              </DialogDescription>
           </DialogHeader>
 
           <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/20 p-3.5">

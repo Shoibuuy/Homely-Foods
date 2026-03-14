@@ -34,6 +34,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/data/store";
@@ -1287,10 +1288,13 @@ export default function ProfilePage() {
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
         <DialogContent className="sm:max-w-xl bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              Add Review
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  Add Review
+                </DialogTitle>
+                <DialogDescription>
+                  Share your feedback about your experience or the dishes you ordered.
+                </DialogDescription>
+              </DialogHeader>
 
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-muted/20 p-4">
@@ -1451,12 +1455,15 @@ export default function ProfilePage() {
       >
         <DialogContent className="sm:max-w-lg bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              Mark as Not Visited
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  Mark as Not Visited
+                </DialogTitle>
+                <DialogDescription>
+                  Please provide a reason why the guest did not visit.
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="space-y-4">
+              <div className="space-y-4">
             {selectedReservation ? (
               <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm">
                 <p className="font-medium text-foreground">

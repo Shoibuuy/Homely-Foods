@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -229,10 +230,15 @@ export default function AdminCategoriesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              {editingCat ? "Edit Category" : "Add Category"}
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  {editingCat ? "Edit Category" : "Add Category"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingCat
+                    ? "Update the details of this category."
+                    : "Create a new category for your menu items."}
+                </DialogDescription>
+              </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -304,10 +310,13 @@ export default function AdminCategoriesPage() {
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="sm:max-w-lg bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              {viewCat ? `${viewCat.name} — Items` : "Category Items"}
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  {viewCat ? `${viewCat.name} — Items` : "Category Items"}
+                </DialogTitle>
+                <DialogDescription>
+                  View all menu items in this category.
+                </DialogDescription>
+              </DialogHeader>
 
           {viewCat ? (
             <div className="space-y-3">

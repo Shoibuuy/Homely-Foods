@@ -34,6 +34,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -680,9 +681,12 @@ export default function AdminOrdersPage() {
         <DialogContent className="max-h-[85vh] overflow-y-auto bg-card text-card-foreground sm:max-w-2xl">
           <DialogHeader>
             <div className="flex items-start justify-between gap-3">
-              <DialogTitle className="font-serif text-foreground">
-                Order Details
-              </DialogTitle>
+<DialogTitle className="font-serif text-foreground">
+                      Order Details
+                    </DialogTitle>
+                    <DialogDescription className="sr-only">
+                      View and manage order details
+                    </DialogDescription>
 
               {detailOrder ? (
                 <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1253,10 +1257,13 @@ export default function AdminOrdersPage() {
       <Dialog open={confirmMetaOpen} onOpenChange={setConfirmMetaOpen}>
         <DialogContent className="bg-card text-card-foreground sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              Confirm order (ETA & note)
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  Confirm order (ETA & note)
+                </DialogTitle>
+                <DialogDescription>
+                  Set the estimated delivery time and add an optional note for the customer.
+                </DialogDescription>
+              </DialogHeader>
 
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
@@ -1352,12 +1359,15 @@ export default function AdminOrdersPage() {
       >
         <DialogContent className="bg-card text-card-foreground sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              Send WhatsApp Update
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  Send WhatsApp Update
+                </DialogTitle>
+                <DialogDescription>
+                  Send a status update to the customer via WhatsApp.
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="grid gap-3">
+              <div className="grid gap-3">
             <div className="rounded-md bg-muted/40 p-3 text-sm">
               <p>
                 <strong>Name:</strong> {waName}
@@ -1487,8 +1497,11 @@ export default function AdminOrdersPage() {
       <Dialog open={overdueOpen} onOpenChange={setOverdueOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="font-serif">Overdue Orders</DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif">Overdue Orders</DialogTitle>
+                <DialogDescription>
+                  Orders that have exceeded their estimated delivery time.
+                </DialogDescription>
+              </DialogHeader>
 
           {overdueOrders.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">

@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -410,10 +411,15 @@ if (sp.has("edit")) {
 >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-foreground">
-              {editingItem ? "Edit Menu Item" : "Add Menu Item"}
-            </DialogTitle>
-          </DialogHeader>
+<DialogTitle className="font-serif text-foreground">
+                  {editingItem ? "Edit Menu Item" : "Add Menu Item"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingItem
+                    ? "Update the details of this menu item."
+                    : "Add a new item to your menu."}
+                </DialogDescription>
+              </DialogHeader>
 
           <div className="grid gap-4 py-4">
             {/* Name */}

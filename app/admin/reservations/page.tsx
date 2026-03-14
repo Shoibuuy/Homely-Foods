@@ -24,6 +24,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -320,6 +321,9 @@ export default function AdminReservationsPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Send WhatsApp update</DialogTitle>
+            <DialogDescription>
+              Send a WhatsApp message to the customer about their reservation status.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3">

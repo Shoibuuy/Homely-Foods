@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -412,6 +413,11 @@ export default function AddressesPage() {
             <DialogTitle>
               {editingId ? "Edit Address" : "Add New Address"}
             </DialogTitle>
+            <DialogDescription>
+              {editingId
+                ? "Update your delivery address details below."
+                : "Enter your delivery address details below."}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
