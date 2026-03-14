@@ -21,6 +21,7 @@ import {
   SheetContent,
   SheetTrigger,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -260,6 +261,9 @@ export function SiteHeader() {
               className="w-72 bg-card p-0 text-card-foreground"
             >
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetDescription className="sr-only">
+                Main navigation menu with links to home, menu, reservations, orders, and profile.
+              </SheetDescription>
 
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-border px-4 py-4">

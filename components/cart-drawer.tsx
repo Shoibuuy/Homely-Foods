@@ -16,6 +16,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -82,6 +83,9 @@ export function CartDrawer() {
                   </span>
                 ) : null}
               </SheetTitle>
+              <SheetDescription className="sr-only">
+                Review items in your shopping cart, adjust quantities, and proceed to checkout.
+              </SheetDescription>
             </div>
 
             {items.length > 0 ? (
