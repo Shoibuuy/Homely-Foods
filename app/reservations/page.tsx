@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Utensils,
   ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "@/lib/data/store";
 import { addReservation, generateId, getUserReservations } from "@/lib/data/storage";
@@ -296,11 +297,18 @@ export default function ReservationsPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
-          <div className="flex items-center gap-3 mb-2">
-            <CalendarDays className="h-7 w-7 text-gold" />
+{/* Header */}
+	<div className="border-b border-border bg-card">
+	<div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
+	<Link
+	  href="/"
+	  className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+	>
+	  <ArrowLeft className="h-4 w-4" />
+	  Back to Home
+	</Link>
+	<div className="flex items-center gap-3 mb-2">
+	<CalendarDays className="h-7 w-7 text-gold" />
             <h1 className="font-serif text-3xl font-bold text-foreground">
               Table Reservations
             </h1>

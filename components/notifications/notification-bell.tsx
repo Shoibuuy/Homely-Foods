@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Bell, Package, Gift, CalendarDays, MessageCircle } from "lucide-react";
+import { Bell, Package, Gift, CalendarDays, MessageCircle, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -12,7 +12,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useNotifications } from "@/lib/data/store";
+import { useNotifications, useAuth } from "@/lib/data/store";
+import { markAllNotificationsRead } from "@/lib/data/storage";
 import { cn } from "@/lib/utils";
 import type { NotificationType } from "@/lib/data/types";
 
@@ -52,9 +53,17 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export function NotificationBell() {
+  const { user } = useAuth();
   const { notifications, unreadCount, markAsRead, refresh } = useNotifications();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const handleMarkAllRead = () => {
+    if (user) {
+      markAllNotificationsRead(user.id);
+      refresh();
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -99,11 +108,24 @@ export function NotificationBell() {
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-semibold text-foreground">Notifications</h3>
-          {unreadCount > 0 && (
-            <Badge variant="secondary" className="bg-gold/10 text-gold-dark">
-              {unreadCount} new
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <>
+                <Badge variant="secondary" className="bg-gold/10 text-gold-dark">
+                  {unreadCount} new
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllRead}
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <CheckCheck className="mr-1 h-3 w-3" />
+                  Read all
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {recent.length === 0 ? (

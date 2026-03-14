@@ -9,6 +9,7 @@ import {
   TrendingDown,
   Gift,
   ArrowRight,
+  ArrowLeft,
   History,
   Star,
   Info,
@@ -257,6 +258,13 @@ export default function PointsPage() {
       {/* Header */}
       <div className="border-b border-border bg-card">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+          <Link
+            href="/profile"
+            className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Profile
+          </Link>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-3">

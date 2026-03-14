@@ -12,6 +12,7 @@ import {
   Home,
   Building2,
   Briefcase,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -342,13 +343,20 @@ export default function AddressesPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <MapPin className="h-7 w-7 text-gold" />
+{/* Header */}
+	<div className="border-b border-border bg-card">
+	<div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
+	<Link
+	  href="/profile"
+	  className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+	>
+	  <ArrowLeft className="h-4 w-4" />
+	  Back to Profile
+	</Link>
+	<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+	<div>
+	<div className="flex items-center gap-3 mb-2">
+	<MapPin className="h-7 w-7 text-gold" />
                 <h1 className="font-serif text-3xl font-bold text-foreground">
                   My Addresses
                 </h1>

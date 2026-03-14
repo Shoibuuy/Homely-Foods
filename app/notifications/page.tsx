@@ -11,6 +11,8 @@ import {
   CheckCheck,
   Filter,
   X,
+  Trash2,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -112,7 +114,7 @@ function groupByDate(notifications: AppNotification[]): Map<string, AppNotificat
 
 export default function NotificationsPage() {
   const { user } = useAuth();
-  const { notifications, unreadCount, markAsRead, refresh } = useNotifications();
+  const { notifications, unreadCount, markAsRead, deleteNotification, clearAll, refresh } = useNotifications();
 
   const [mounted, setMounted] = useState(false);
   const [typeFilter, setTypeFilter] = useState<NotificationType | "all">("all");
@@ -140,6 +142,16 @@ export default function NotificationsPage() {
     markAllNotificationsRead(user.id);
     refresh();
     toast.success("All notifications marked as read");
+  };
+
+  const handleDelete = (id: string) => {
+    deleteNotification(id);
+    toast.success("Notification deleted");
+  };
+
+  const handleClearAll = () => {
+    clearAll();
+    toast.success("All notifications cleared");
   };
 
   const clearFilters = () => {
@@ -175,6 +187,14 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="border-b border-border bg-card">
         <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
+          <Link
+            href="/profile"
+            className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Profile
+          </Link>
+
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="mb-1 font-serif text-3xl font-bold text-foreground">
@@ -185,17 +205,30 @@ export default function NotificationsPage() {
               </p>
             </div>
 
-            {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleMarkAllRead}
-                className="shrink-0 text-foreground"
-              >
-                <CheckCheck className="mr-2 h-4 w-4" />
-                Mark all as read
-              </Button>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAllRead}
+                  className="shrink-0 text-foreground"
+                >
+                  <CheckCheck className="mr-2 h-4 w-4" />
+                  Mark all read
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                  className="shrink-0 text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear all
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -354,16 +387,27 @@ export default function NotificationsPage() {
                                 </p>
                               </div>
 
-                              {!notification.read && (
+                              <div className="flex shrink-0 gap-1">
+                                {!notification.read && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => markAsRead(notification.id)}
+                                    className="text-xs text-muted-foreground hover:text-foreground"
+                                  >
+                                    Mark read
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
-                                  size="sm"
-                                  onClick={() => markAsRead(notification.id)}
-                                  className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
+                                  size="icon"
+                                  onClick={() => handleDelete(notification.id)}
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                 >
-                                  Mark read
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete</span>
                                 </Button>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </CardContent>

@@ -1,28 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, UtensilsCrossed, Gift } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, UtensilsCrossed, Gift, Users, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { HPCoin } from "@/components/hp-coin";
 import { useAuth } from "@/lib/data/store";
+import { validateReferralCode, processReferral } from "@/lib/data/storage";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register } = useAuth();
+
+  // Pre-fill referral code from URL
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode && !referralCode) {
+      handleReferralChange(refCode);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+  const [referralStatus, setReferralStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [referrerId, setReferrerId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleReferralChange = (value: string) => {
+    const code = value.toUpperCase();
+    setReferralCode(code);
+    
+    if (code.length >= 6) {
+      const result = validateReferralCode(code);
+      setReferralStatus(result.valid ? "valid" : "invalid");
+      setReferrerId(result.referrerId);
+    } else {
+      setReferralStatus("idle");
+      setReferrerId(null);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,10 +74,18 @@ export default function RegisterPage() {
     setLoading(true);
     setTimeout(() => {
       const result = register({ name, email, phone, password });
-      if (result.success) {
-        toast.success("Welcome to HOMELY FOODS!", {
-          description: "Your account has been created. You earned 5 HP as a welcome bonus!",
-        });
+      if (result.success && result.user) {
+        // Process referral if valid
+        if (referralStatus === "valid" && referrerId) {
+          processReferral(referrerId, result.user.id);
+          toast.success("Welcome to HOMELY FOODS!", {
+            description: "Your account has been created. You earned 10 HP (5 welcome + 5 referral bonus)!",
+          });
+        } else {
+          toast.success("Welcome to HOMELY FOODS!", {
+            description: "Your account has been created. You earned 5 HP as a welcome bonus!",
+          });
+        }
         router.push("/");
       } else {
         setError(result.error || "Registration failed.");
@@ -176,6 +212,49 @@ export default function RegisterPage() {
                 className="bg-background"
                 autoComplete="new-password"
               />
+            </div>
+
+            {/* Referral Code */}
+            <div className="space-y-2">
+              <Label htmlFor="referral-code" className="flex items-center gap-2 text-card-foreground">
+                <Users className="h-4 w-4 text-gold" />
+                Referral Code
+                <span className="text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="referral-code"
+                  placeholder="Enter friend's code"
+                  value={referralCode}
+                  onChange={(e) => handleReferralChange(e.target.value)}
+                  className={`bg-background pr-10 uppercase ${
+                    referralStatus === "valid"
+                      ? "border-green focus-visible:ring-green"
+                      : referralStatus === "invalid"
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }`}
+                  maxLength={12}
+                />
+                {referralStatus === "valid" && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green" />
+                )}
+                {referralStatus === "invalid" && (
+                  <XCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-destructive" />
+                )}
+              </div>
+              {referralStatus === "valid" && (
+                <p className="flex items-center gap-1 text-xs text-green">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Valid code! You and your friend will each earn bonus HP
+                </p>
+              )}
+              {referralStatus === "invalid" && referralCode.length >= 6 && (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <XCircle className="h-3 w-3" />
+                  Invalid referral code
+                </p>
+              )}
             </div>
 
             <Button

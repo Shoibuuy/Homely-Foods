@@ -948,6 +948,54 @@ export function markAllNotificationsRead(userId: string): void {
   emitStoreChange("notifications");
 }
 
+export function deleteNotification(notificationId: string): void {
+  const all = getItem<AppNotification[]>(KEYS.NOTIFICATIONS, []);
+  setItem(KEYS.NOTIFICATIONS, all.filter((n) => n.id !== notificationId));
+  emitStoreChange("notifications");
+}
+
+export function clearAllNotifications(userId: string): void {
+  const all = getItem<AppNotification[]>(KEYS.NOTIFICATIONS, []);
+  setItem(KEYS.NOTIFICATIONS, all.filter((n) => n.userId !== userId));
+  emitStoreChange("notifications");
+}
+
+// ─── Referral Code Validation ────────────────────────────────────
+export function validateReferralCode(code: string): { valid: boolean; referrerId: string | null } {
+  if (!code || code.length < 6) return { valid: false, referrerId: null };
+  
+  const users = getUsers();
+  const referrer = users.find((u) => u.referralCode === code);
+  
+  if (referrer) {
+    return { valid: true, referrerId: referrer.id };
+  }
+  
+  return { valid: false, referrerId: null };
+}
+
+export function processReferral(referrerId: string, newUserId: string): void {
+  // Create referral record
+  createReferral(referrerId, newUserId);
+  
+  // Award bonus HP to referrer
+  const users = getUsers();
+  const referrer = users.find((u) => u.id === referrerId);
+  if (referrer) {
+    const updatedReferrer = { ...referrer, hpBalance: referrer.hpBalance + 10 };
+    updateUser(updatedReferrer);
+    recordHPBonus(referrerId, 10, "Referral bonus - new friend signed up");
+  }
+  
+  // Award bonus HP to new user
+  const newUser = users.find((u) => u.id === newUserId);
+  if (newUser) {
+    const updatedNewUser = { ...newUser, hpBalance: newUser.hpBalance + 5 };
+    updateUser(updatedNewUser);
+    recordHPBonus(newUserId, 5, "Welcome bonus - referred by a friend");
+  }
+}
+
 // ─── Redeemable Items ────────────────────────────────────────────
 export function getRedeemableItems(): MenuItem[] {
   return getMenuItems().filter((item) => item.hpRedeemCost > 0 && item.available);
