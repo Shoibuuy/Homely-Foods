@@ -201,3 +201,52 @@ export interface Reservation {
 
   createdAt: string;
 }
+
+// HP Transaction history
+export interface HPTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: HPTransactionType;
+  description: string;
+  orderId?: string;
+  createdAt: string;
+}
+
+// Saved delivery addresses
+export interface SavedAddress {
+  id: string;
+  userId: string;
+  label: string;
+  fullName: string;
+  phone: string;
+  street: string;
+  apartment?: string;
+  floor?: string;
+  room?: string;
+  area: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+// Referral system
+export interface Referral {
+  id: string;
+  referrerId: string;
+  referredUserId: string;
+  referralCode: string;
+  hpAwarded: number;
+  status: "pending" | "completed";
+  createdAt: string;
+  completedAt?: string;
+}
+
+// User extended with referral code
+export interface UserReferralInfo {
+  referralCode: string;
+  totalReferrals: number;
+  totalHPEarned: number;
+}

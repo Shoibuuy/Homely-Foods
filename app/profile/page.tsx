@@ -615,15 +615,45 @@ export default function ProfilePage() {
                     </p>
                   </div>
 
-                  <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
-                    <p className="text-xs text-muted-foreground">HP Balance</p>
-                    <p className="mt-1 font-serif text-xl font-bold text-foreground">
-                      {user.hpBalance}
-                    </p>
-                  </div>
+                  <Link href="/points" className="block">
+                    <div className="rounded-lg border border-gold/20 bg-gold/5 p-3 hover:bg-gold/10 transition-colors cursor-pointer">
+                      <p className="text-xs text-muted-foreground">HP Balance</p>
+                      <p className="mt-1 font-serif text-xl font-bold text-foreground">
+                        {user.hpBalance}
+                      </p>
+                    </div>
+                  </Link>
                 </div>
 
                 <Separator className="my-5" />
+
+                {/* Quick Links */}
+                <div className="grid grid-cols-2 gap-2 mb-5">
+                  <Link href="/points">
+                    <Button variant="outline" size="sm" className="w-full justify-start text-foreground">
+                      <Coins className="mr-2 h-4 w-4 text-gold" />
+                      Points
+                    </Button>
+                  </Link>
+                  <Link href="/addresses">
+                    <Button variant="outline" size="sm" className="w-full justify-start text-foreground">
+                      <MapPin className="mr-2 h-4 w-4 text-gold" />
+                      Addresses
+                    </Button>
+                  </Link>
+                  <Link href="/referrals">
+                    <Button variant="outline" size="sm" className="w-full justify-start text-foreground">
+                      <User className="mr-2 h-4 w-4 text-gold" />
+                      Referrals
+                    </Button>
+                  </Link>
+                  <Link href="/notifications">
+                    <Button variant="outline" size="sm" className="w-full justify-start text-foreground">
+                      <CalendarDays className="mr-2 h-4 w-4 text-gold" />
+                      Alerts
+                    </Button>
+                  </Link>
+                </div>
 
                 <Button
                   variant="outline"

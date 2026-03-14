@@ -13,6 +13,10 @@ import type {
   ReviewType,
   ExperienceReview,
   DishReview,
+  HPTransaction,
+  HPTransactionType,
+  SavedAddress,
+  Referral,
 } from "./types";
 
 import { categories, menuItems, defaultHPConfig } from "./mock-data";
@@ -30,6 +34,9 @@ const KEYS = {
   REVIEWS: "homely_reviews",
   INITIALIZED: "homely_initialized",
   ORDER_SEQ: "homely_order_seq",
+  HP_TRANSACTIONS: "homely_hp_transactions",
+  SAVED_ADDRESSES: "homely_saved_addresses",
+  REFERRALS: "homely_referrals",
 } as const;
 
 const STORE_EVENT = "homely_store_changed";
@@ -730,4 +737,218 @@ export function markOrderContacted(
 
 export function generateId(prefix: string = "id"): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+// ─── HP Transactions ─────────────────────────────────────────────
+export function getHPTransactions(userId: string): HPTransaction[] {
+  const all = getItem<HPTransaction[]>(KEYS.HP_TRANSACTIONS, []);
+  return all
+    .filter((t) => t.userId === userId)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export function addHPTransaction(tx: HPTransaction): void {
+  const all = getItem<HPTransaction[]>(KEYS.HP_TRANSACTIONS, []);
+  all.unshift(tx);
+  setItem(KEYS.HP_TRANSACTIONS, all);
+}
+
+export function recordHPEarned(
+  userId: string,
+  amount: number,
+  description: string,
+  orderId?: string
+): HPTransaction {
+  const tx: HPTransaction = {
+    id: generateId("hpt"),
+    userId,
+    amount,
+    type: "earned",
+    description,
+    orderId,
+    createdAt: new Date().toISOString(),
+  };
+  addHPTransaction(tx);
+  return tx;
+}
+
+export function recordHPRedeemed(
+  userId: string,
+  amount: number,
+  description: string,
+  orderId?: string
+): HPTransaction {
+  const tx: HPTransaction = {
+    id: generateId("hpt"),
+    userId,
+    amount: -Math.abs(amount),
+    type: "redeemed",
+    description,
+    orderId,
+    createdAt: new Date().toISOString(),
+  };
+  addHPTransaction(tx);
+  return tx;
+}
+
+export function recordHPBonus(
+  userId: string,
+  amount: number,
+  description: string
+): HPTransaction {
+  const tx: HPTransaction = {
+    id: generateId("hpt"),
+    userId,
+    amount,
+    type: "bonus",
+    description,
+    createdAt: new Date().toISOString(),
+  };
+  addHPTransaction(tx);
+  return tx;
+}
+
+// ─── Saved Addresses ─────────────────────────────────────────────
+export function getSavedAddresses(userId: string): SavedAddress[] {
+  const all = getItem<SavedAddress[]>(KEYS.SAVED_ADDRESSES, []);
+  return all
+    .filter((a) => a.userId === userId)
+    .sort((a, b) => {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      return a.createdAt < b.createdAt ? 1 : -1;
+    });
+}
+
+export function addSavedAddress(address: Omit<SavedAddress, "id" | "createdAt">): SavedAddress {
+  const all = getItem<SavedAddress[]>(KEYS.SAVED_ADDRESSES, []);
+  
+  // If this is set as default, unset others
+  if (address.isDefault) {
+    all.forEach((a) => {
+      if (a.userId === address.userId) a.isDefault = false;
+    });
+  }
+  
+  const newAddr: SavedAddress = {
+    ...address,
+    id: generateId("addr"),
+    createdAt: new Date().toISOString(),
+  };
+  
+  all.unshift(newAddr);
+  setItem(KEYS.SAVED_ADDRESSES, all);
+  return newAddr;
+}
+
+export function updateSavedAddress(updated: SavedAddress): void {
+  const all = getItem<SavedAddress[]>(KEYS.SAVED_ADDRESSES, []);
+  const idx = all.findIndex((a) => a.id === updated.id);
+  if (idx === -1) return;
+  
+  // If setting as default, unset others
+  if (updated.isDefault) {
+    all.forEach((a) => {
+      if (a.userId === updated.userId && a.id !== updated.id) a.isDefault = false;
+    });
+  }
+  
+  all[idx] = updated;
+  setItem(KEYS.SAVED_ADDRESSES, all);
+}
+
+export function deleteSavedAddress(addressId: string): void {
+  const all = getItem<SavedAddress[]>(KEYS.SAVED_ADDRESSES, []);
+  setItem(KEYS.SAVED_ADDRESSES, all.filter((a) => a.id !== addressId));
+}
+
+export function setDefaultAddress(addressId: string, userId: string): void {
+  const all = getItem<SavedAddress[]>(KEYS.SAVED_ADDRESSES, []);
+  all.forEach((a) => {
+    if (a.userId === userId) {
+      a.isDefault = a.id === addressId;
+    }
+  });
+  setItem(KEYS.SAVED_ADDRESSES, all);
+}
+
+// ─── Referrals ───────────────────────────────────────────────────
+export function getReferrals(userId: string): Referral[] {
+  const all = getItem<Referral[]>(KEYS.REFERRALS, []);
+  return all
+    .filter((r) => r.referrerId === userId)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export function getReferralByCode(code: string): Referral | null {
+  const all = getItem<Referral[]>(KEYS.REFERRALS, []);
+  return all.find((r) => r.referralCode === code) ?? null;
+}
+
+export function generateReferralCode(userId: string): string {
+  const base = userId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `HF${base}${suffix}`;
+}
+
+export function getUserReferralCode(userId: string): string {
+  // Check if user has a referral code stored
+  const users = getUsers();
+  const user = users.find((u) => u.id === userId);
+  if (user?.referralCode) return user.referralCode;
+  
+  // Generate new code and store it
+  const code = generateReferralCode(userId);
+  if (user) {
+    const updated = { ...user, referralCode: code };
+    updateUser(updated);
+  }
+  return code;
+}
+
+export function createReferral(referrerId: string, referredUserId: string): Referral {
+  const referral: Referral = {
+    id: generateId("ref"),
+    referrerId,
+    referredUserId,
+    referralCode: getUserReferralCode(referrerId),
+    hpAwarded: 10, // HP awarded for successful referral
+    status: "completed",
+    createdAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+  };
+  
+  const all = getItem<Referral[]>(KEYS.REFERRALS, []);
+  all.unshift(referral);
+  setItem(KEYS.REFERRALS, all);
+  
+  return referral;
+}
+
+export function getReferralStats(userId: string): { totalReferrals: number; totalHPEarned: number } {
+  const referrals = getReferrals(userId);
+  const completed = referrals.filter((r) => r.status === "completed");
+  return {
+    totalReferrals: completed.length,
+    totalHPEarned: completed.reduce((sum, r) => sum + r.hpAwarded, 0),
+  };
+}
+
+// ─── All Notifications (admin access) ────────────────────────────
+export function getAllNotifications(): AppNotification[] {
+  return getItem<AppNotification[]>(KEYS.NOTIFICATIONS, []);
+}
+
+export function markAllNotificationsRead(userId: string): void {
+  const all = getItem<AppNotification[]>(KEYS.NOTIFICATIONS, []);
+  all.forEach((n) => {
+    if (n.userId === userId) n.read = true;
+  });
+  setItem(KEYS.NOTIFICATIONS, all);
+  emitStoreChange("notifications");
+}
+
+// ─── Redeemable Items ────────────────────────────────────────────
+export function getRedeemableItems(): MenuItem[] {
+  return getMenuItems().filter((item) => item.hpRedeemCost > 0 && item.available);
 }

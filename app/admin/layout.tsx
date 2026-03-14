@@ -17,6 +17,8 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  Bell,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/data/store";
@@ -29,9 +31,10 @@ const sidebarLinks = [
   { label: "Menu Items", href: "/admin/menu", icon: UtensilsCrossed },
   { label: "Categories", href: "/admin/categories", icon: Layers },
   { label: "Orders", href: "/admin/orders", icon: ClipboardList },
-  { label: "Reservations", href: "/admin/reservations", icon: ClipboardList },
+  { label: "Reservations", href: "/admin/reservations", icon: CalendarDays },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Users", href: "/admin/users", icon: Users },
+  { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "HP Config", href: "/admin/hp-config", icon: Settings },
 ];
 

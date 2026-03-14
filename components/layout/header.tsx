@@ -33,6 +33,7 @@ import { useAuth } from "@/lib/data/store";
 import { useCart } from "@/lib/data/store";
 import { HPCoin } from "@/components/hp-coin";
 import { openCartDrawer } from "@/lib/cart-drawer-state";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -125,15 +126,18 @@ export function SiteHeader() {
           </Button>
 
           {safeUser ? (
-            <Link
-              href="/profile"
-              className="hidden items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 transition-colors hover:bg-gold/20 md:flex"
-            >
-              <HPCoin size="sm" />
-              <span className="text-sm font-semibold text-gold-dark">
-                {safeUser.hpBalance}
-              </span>
-            </Link>
+            <>
+              <Link
+                href="/points"
+                className="hidden items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 transition-colors hover:bg-gold/20 md:flex"
+              >
+                <HPCoin size="sm" />
+                <span className="text-sm font-semibold text-gold-dark">
+                  {safeUser.hpBalance}
+                </span>
+              </Link>
+              <NotificationBell />
+            </>
           ) : null}
 
           <Button
@@ -191,6 +195,20 @@ export function SiteHeader() {
                   <Link href="/orders" className="cursor-pointer">
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     My Orders
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href="/points" className="cursor-pointer">
+                    <UtensilsCrossed className="mr-2 h-4 w-4" />
+                    HomelyPoints
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href="/addresses" className="cursor-pointer">
+                    <House className="mr-2 h-4 w-4" />
+                    My Addresses
                   </Link>
                 </DropdownMenuItem>
 
