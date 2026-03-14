@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, Check, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, ImageIcon, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,8 @@ import {
   generateId,
 } from "@/lib/data/storage";
 import type { Category } from "@/lib/data/types";
+import Link from "next/link";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 const emptyCategory: Omit<Category, "id"> = {
@@ -49,6 +51,8 @@ export default function AdminCategoriesPage() {
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<Category, "id">>(emptyCategory);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewCat, setViewCat] = useState<Category | null>(null);
 
   const refresh = useCallback(() => {
     setCats(getCategories());
@@ -62,6 +66,11 @@ export default function AdminCategoriesPage() {
   const allItems = getMenuItems();
   for (const item of allItems) {
     itemCounts[item.categorySlug] = (itemCounts[item.categorySlug] || 0) + 1;
+  }
+
+  function openViewItems(cat: Category) {
+    setViewCat(cat);
+    setViewDialogOpen(true);
   }
 
   function openCreate() {
@@ -177,23 +186,39 @@ export default function AdminCategoriesPage() {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => openEdit(cat)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => openDelete(cat.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+    onClick={() => openViewItems(cat)}
+    aria-label="View items"
+    title="View items"
+  >
+    <Eye className="h-3.5 w-3.5" />
+  </Button>
+
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+    onClick={() => openEdit(cat)}
+    aria-label="Edit category"
+    title="Edit"
+  >
+    <Pencil className="h-3.5 w-3.5" />
+  </Button>
+
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+    onClick={() => openDelete(cat.id)}
+    aria-label="Delete category"
+    title="Delete"
+  >
+    <Trash2 className="h-3.5 w-3.5" />
+  </Button>
+</div>
               </div>
             </CardContent>
           </Card>
@@ -270,6 +295,66 @@ export default function AdminCategoriesPage() {
             >
               <Check className="mr-2 h-4 w-4" />
               {editingCat ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+        {/* View Items Dialog */}
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-lg bg-card text-card-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-foreground">
+              {viewCat ? `${viewCat.name} — Items` : "Category Items"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewCat ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {itemCounts[viewCat.slug] || 0} item(s) in this category
+              </p>
+
+              <div className="max-h-[380px] overflow-auto rounded-lg border border-border">
+                <div className="divide-y divide-border">
+                  {allItems
+                    .filter((i) => i.categorySlug === viewCat.slug)
+                    .map((i) => (
+                      <div key={i.id} className="flex items-center justify-between gap-3 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">{i.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            AED {i.price} • {i.available ? "Available" : "Unavailable"}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Link href={`/menu/${i.id}`} className="text-xs text-gold hover:text-gold-dark">
+                            View
+                          </Link>
+                          <Link
+                            href={`/admin/menu?edit=${encodeURIComponent(i.id)}`}
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Edit
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+
+                  {allItems.filter((i) => i.categorySlug === viewCat.slug).length === 0 && (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      No items yet in this category.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

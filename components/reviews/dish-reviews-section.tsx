@@ -53,11 +53,7 @@ export function DishReviewsSection({
           </p>
         </div>
       ) : (
-        <ReviewList
-          type="dish"
-          reviews={top}
-          onChanged={() => setTick((n) => n + 1)}
-        />
+        <ReviewList type="dish" reviews={top} onChanged={() => setTick((n) => n + 1)} />
       )}
     </div>
   );

@@ -1,11 +1,13 @@
 "use client";
 
+import { calcSubtotal } from "@/lib/orders/pricing";
 import React, {
   createContext,
   useContext,
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 import type {
@@ -32,11 +34,17 @@ import {
   generateId,
 } from "./storage";
 
+const STORE_EVENT = "homely_store_changed";
+const NOTIFICATIONS_KEY = "homely_notifications";
+
 // ─── Auth Context ────────────────────────────────────────────────
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
+  login: (email: string, password: string) => {
+    success: boolean;
+    error?: string;
+  };
   register: (data: {
     name: string;
     email: string;
@@ -64,36 +72,56 @@ function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     initializeStore();
     const stored = getCurrentUser();
+
     if (stored) {
-      // Refresh from users list in case data changed
       const users = getUsers();
       const fresh = users.find((u) => u.id === stored.id);
-      setUser(fresh ?? stored);
+      const resolvedUser = fresh ?? stored;
+      setUser(resolvedUser);
+      setCurrentUser(resolvedUser);
     }
+
     setLoading(false);
   }, []);
 
   const refreshUser = useCallback(() => {
     const stored = getCurrentUser();
-    if (stored) {
-      const users = getUsers();
-      const fresh = users.find((u) => u.id === stored.id);
-      if (fresh) {
-        setUser(fresh);
-        setCurrentUser(fresh);
-      }
+
+    if (!stored) {
+      setUser(null);
+      return;
     }
+
+    const users = getUsers();
+    const fresh = users.find((u) => u.id === stored.id);
+
+    if (fresh) {
+      setUser(fresh);
+      setCurrentUser(fresh);
+      return;
+    }
+
+    setUser(stored);
   }, []);
 
   const login = useCallback(
-    (email: string, password: string): { success: boolean; error?: string } => {
+    (
+      email: string,
+      password: string
+    ): { success: boolean; error?: string } => {
       const users = getUsers();
       const found = users.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase()
+        (u) => u.email.toLowerCase() === email.toLowerCase().trim()
       );
-      if (!found) return { success: false, error: "No account found with this email." };
-      if (found.password !== password)
+
+      if (!found) {
+        return { success: false, error: "No account found with this email." };
+      }
+
+      if (found.password !== password) {
         return { success: false, error: "Incorrect password." };
+      }
+
       setCurrentUser(found);
       setUser(found);
       return { success: true };
@@ -109,23 +137,31 @@ function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
     }): { success: boolean; error?: string } => {
       const users = getUsers();
-      if (users.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
-        return { success: false, error: "An account with this email already exists." };
+      const normalizedEmail = data.email.toLowerCase().trim();
+
+      if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+        return {
+          success: false,
+          error: "An account with this email already exists.",
+        };
       }
+
       const newUser: User = {
         id: generateId("user"),
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
+        name: data.name.trim(),
+        email: normalizedEmail,
+        phone: data.phone.trim(),
         password: data.password,
         role: "customer",
-        hpBalance: 5, // Welcome bonus
+        hpBalance: 5,
         createdAt: new Date().toISOString(),
       };
+
       const updated = [...users, newUser];
       setUsers(updated);
       setCurrentUser(newUser);
       setUser(newUser);
+
       return { success: true };
     },
     []
@@ -139,6 +175,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(
     (data: Partial<User>) => {
       if (!user) return;
+
       const updated = { ...user, ...data };
       updateUser(updated);
       setUser(updated);
@@ -149,6 +186,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const addHP = useCallback(
     (amount: number, description: string) => {
       if (!user) return;
+
       const tx: HPTransaction = {
         id: generateId("hp"),
         userId: user.id,
@@ -157,7 +195,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
         description,
         createdAt: new Date().toISOString(),
       };
-      // Store tx in notifications for now
+
       storeAddNotification({
         id: generateId("notif"),
         userId: user.id,
@@ -167,10 +205,13 @@ function AuthProvider({ children }: { children: ReactNode }) {
         read: false,
         createdAt: new Date().toISOString(),
       });
+
       const updated = { ...user, hpBalance: user.hpBalance + amount };
       updateUser(updated);
       setUser(updated);
-      void tx; // transaction tracked via notifications
+      setCurrentUser(updated);
+
+      void tx;
     },
     [user]
   );
@@ -196,9 +237,22 @@ function AuthProvider({ children }: { children: ReactNode }) {
 // ─── Cart Context ────────────────────────────────────────────────
 interface CartContextType {
   items: CartItem[];
-  addItem: (menuItem: MenuItem, quantity: number, addOns: AddOn[]) => void;
-  removeItem: (menuItemId: string) => void;
-  updateQuantity: (menuItemId: string, quantity: number) => void;
+  addItem: (
+    menuItem: MenuItem,
+    quantity: number,
+    addOns: AddOn[],
+    note?: string
+  ) => void;
+  removeItem: (cartItemId: string) => void;
+  updateQuantity: (cartItemId: string, quantity: number) => void;
+  updateItemDetails: (
+    cartItemId: string,
+    updates: {
+      quantity: number;
+      selectedAddOns: AddOn[];
+      note?: string;
+    }
+  ) => void;
   clearCart: () => void;
   itemCount: number;
   subtotal: number;
@@ -213,10 +267,15 @@ export function useCart(): CartContextType {
   return ctx;
 }
 
+function getSortedAddOnIds(addOns: AddOn[]): string[] {
+  return [...addOns.map((a) => a.id)].sort();
+}
+
 function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
+    initializeStore();
     const stored = getCartItems();
     setItems(stored);
   }, []);
@@ -227,69 +286,147 @@ function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback(
-    (menuItem: MenuItem, quantity: number, addOns: AddOn[]) => {
-      const existing = items.find((i) => i.menuItem.id === menuItem.id);
-      if (existing) {
-        const updated = items.map((i) =>
-          i.menuItem.id === menuItem.id
-            ? { ...i, quantity: i.quantity + quantity, selectedAddOns: addOns }
-            : i
-        );
-        persist(updated);
-      } else {
-        persist([...items, { menuItem, quantity, selectedAddOns: addOns }]);
-      }
+    (
+      menuItem: MenuItem,
+      quantity: number,
+      addOns: AddOn[],
+      note?: string
+    ) => {
+      setItems((currentItems) => {
+        const normalizedNote = note?.trim() || undefined;
+
+        const existing = currentItems.find((i) => {
+          const sameMenuItem = i.menuItem.id === menuItem.id;
+          const sameNote = (i.note?.trim() || undefined) === normalizedNote;
+
+          const currentAddOnIds = getSortedAddOnIds(i.selectedAddOns);
+          const nextAddOnIds = getSortedAddOnIds(addOns);
+
+          const sameAddOns =
+            currentAddOnIds.length === nextAddOnIds.length &&
+            currentAddOnIds.every((id, idx) => id === nextAddOnIds[idx]);
+
+          return sameMenuItem && sameNote && sameAddOns;
+        });
+
+        let nextItems: CartItem[];
+
+        if (existing) {
+          nextItems = currentItems.map((i) =>
+            i.id === existing.id
+              ? {
+                  ...i,
+                  quantity: i.quantity + quantity,
+                }
+              : i
+          );
+        } else {
+          nextItems = [
+            ...currentItems,
+            {
+              id: generateId("cart"),
+              menuItem,
+              quantity,
+              selectedAddOns: addOns,
+              note: normalizedNote,
+            },
+          ];
+        }
+
+        setCartItems(nextItems);
+        return nextItems;
+      });
     },
-    [items, persist]
+    []
   );
 
-  const removeItem = useCallback(
-    (menuItemId: string) => {
-      persist(items.filter((i) => i.menuItem.id !== menuItemId));
-    },
-    [items, persist]
-  );
+  const removeItem = useCallback((cartItemId: string) => {
+    setItems((currentItems) => {
+      const nextItems = currentItems.filter((i) => i.id !== cartItemId);
+      setCartItems(nextItems);
+      return nextItems;
+    });
+  }, []);
 
-  const updateQuantity = useCallback(
-    (menuItemId: string, quantity: number) => {
+  const updateQuantity = useCallback((cartItemId: string, quantity: number) => {
+    setItems((currentItems) => {
+      let nextItems: CartItem[];
+
       if (quantity <= 0) {
-        persist(items.filter((i) => i.menuItem.id !== menuItemId));
-        return;
+        nextItems = currentItems.filter((i) => i.id !== cartItemId);
+      } else {
+        nextItems = currentItems.map((i) =>
+          i.id === cartItemId ? { ...i, quantity } : i
+        );
       }
-      persist(
-        items.map((i) =>
-          i.menuItem.id === menuItemId ? { ...i, quantity } : i
-        )
-      );
+
+      setCartItems(nextItems);
+      return nextItems;
+    });
+  }, []);
+
+  const updateItemDetails = useCallback(
+    (
+      cartItemId: string,
+      updates: {
+        quantity: number;
+        selectedAddOns: AddOn[];
+        note?: string;
+      }
+    ) => {
+      setItems((currentItems) => {
+        const normalizedNote = updates.note?.trim() || undefined;
+
+        const nextItems = currentItems.flatMap((item) => {
+          if (item.id !== cartItemId) return [item];
+          if (updates.quantity <= 0) return [];
+
+          return [
+            {
+              ...item,
+              quantity: updates.quantity,
+              selectedAddOns: updates.selectedAddOns,
+              note: normalizedNote,
+            },
+          ];
+        });
+
+        setCartItems(nextItems);
+        return nextItems;
+      });
     },
-    [items, persist]
+    []
   );
 
   const clearCart = useCallback(() => {
     persist([]);
   }, [persist]);
 
-  const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
+  const itemCount = useMemo(
+    () => items.reduce((acc, i) => acc + i.quantity, 0),
+    [items]
+  );
 
-  const subtotal = items.reduce((acc, i) => {
-    const addOnTotal = i.selectedAddOns.reduce((s, a) => s + a.price, 0);
-    return acc + (i.menuItem.price + addOnTotal) * i.quantity;
-  }, 0);
+  const subtotal = useMemo(() => calcSubtotal(items), [items]);
 
-  const estimatedHP = calculateHP(items, subtotal, getHPConfig());
+  const estimatedHP = useMemo(
+    () => calculateHP(items, subtotal, getHPConfig()),
+    [items, subtotal]
+  );
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        itemCount,
-        subtotal,
-        estimatedHP,
-      }}
+    value={{
+      items,
+      addItem,
+      removeItem,
+      updateQuantity,
+      updateItemDetails,
+      clearCart,
+      itemCount,
+      subtotal,
+      estimatedHP,
+    }}
     >
       {children}
     </CartContext.Provider>
@@ -310,8 +447,11 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 
 export function useNotifications(): NotificationContextType {
   const ctx = useContext(NotificationContext);
-  if (!ctx)
-    throw new Error("useNotifications must be used within NotificationProvider");
+  if (!ctx) {
+    throw new Error(
+      "useNotifications must be used within NotificationProvider"
+    );
+  }
   return ctx;
 }
 
@@ -331,15 +471,67 @@ function NotificationProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStoreChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ scope?: string }>;
+      const scope = customEvent.detail?.scope;
+
+      if (!scope || scope === "notifications" || scope === "orders") {
+        refresh();
+      }
+    };
+
+    window.addEventListener(STORE_EVENT, handleStoreChange);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      window.removeEventListener(STORE_EVENT, handleStoreChange);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [refresh]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
   const markAsRead = useCallback(
     (id: string) => {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
+      setNotifications((prev) => {
+        const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
+
+        if (typeof window !== "undefined" && user) {
+          try {
+            const raw = localStorage.getItem(NOTIFICATIONS_KEY);
+            const all = raw
+              ? (JSON.parse(raw) as AppNotification[])
+              : [];
+
+            const updatedAll = all.map((n) =>
+              n.userId === user.id && n.id === id ? { ...n, read: true } : n
+            );
+
+            localStorage.setItem(
+              NOTIFICATIONS_KEY,
+              JSON.stringify(updatedAll)
+            );
+
+            window.dispatchEvent(
+              new CustomEvent(STORE_EVENT, {
+                detail: { scope: "notifications" },
+              })
+            );
+          } catch {
+            // ignore storage parsing/write issues
+          }
+        }
+
+        return next;
+      });
     },
-    []
+    [user]
   );
 
   return (

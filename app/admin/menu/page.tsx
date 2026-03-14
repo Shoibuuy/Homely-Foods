@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Pencil,
@@ -84,6 +85,9 @@ export default function AdminMenuPage() {
   const [form, setForm] = useState<Omit<MenuItem, "id">>(emptyItem);
   const [tagInput, setTagInput] = useState("");
   const [newAddOn, setNewAddOn] = useState({ name: "", price: 0 });
+  const didAutoOpenRef = useRef(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const refresh = useCallback(() => {
     setItems(getMenuItems());
@@ -93,6 +97,27 @@ export default function AdminMenuPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId) {
+      // reset so future links can auto-open again
+      didAutoOpenRef.current = false;
+      return;
+    }
+  
+    // prevent repeated opens on refresh() / items changes
+    if (didAutoOpenRef.current) return;
+  
+    const item = items.find((i) => i.id === editId);
+    if (!item) return;
+  
+    didAutoOpenRef.current = true;
+  
+    setFilterCat(item.categorySlug || "all");
+    openEdit(item);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, items]);
 
   const filtered = items.filter((item) => {
     const matchesSearch =
@@ -146,8 +171,16 @@ export default function AdminMenuPage() {
       addMenuItem({ ...form, id: generateId("item") });
       toast.success(`"${form.name}" added to menu`);
     }
-    setDialogOpen(false);
-    refresh();
+    // If opened via ?edit=, remove it so dialog won't reopen after refresh
+const sp = new URLSearchParams(searchParams.toString());
+if (sp.has("edit")) {
+  sp.delete("edit");
+  const qs = sp.toString();
+  router.replace(qs ? `/admin/menu?${qs}` : "/admin/menu");
+}
+      clearEditParam();
+      setDialogOpen(false);
+      refresh();
   }
 
   function handleDelete() {
@@ -197,6 +230,15 @@ export default function AdminMenuPage() {
       category: cat?.name || "",
       categorySlug: slug,
     }));
+  }
+
+  function clearEditParam() {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (!sp.has("edit")) return;
+
+    sp.delete("edit");
+    const qs = sp.toString();
+    router.replace(qs ? `/admin/menu?${qs}` : "/admin/menu");
   }
 
   return (
@@ -359,7 +401,13 @@ export default function AdminMenuPage() {
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+  open={dialogOpen}
+  onOpenChange={(open) => {
+    if (!open) clearEditParam();
+    setDialogOpen(open);
+  }}
+>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl bg-card text-card-foreground">
           <DialogHeader>
             <DialogTitle className="font-serif text-foreground">
@@ -632,9 +680,15 @@ export default function AdminMenuPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
+          <Button
+  variant="outline"
+  onClick={() => {
+    clearEditParam();
+    setDialogOpen(false);
+  }}
+>
+  Cancel
+</Button>
             <Button
               onClick={handleSave}
               className="bg-gold text-primary-foreground hover:bg-gold-dark"

@@ -2,13 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Star, Clock, Award, Truck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, Star, Clock, Award, Truck, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MenuCard } from "@/components/menu-card";
 import { HPCoin, HPBadge } from "@/components/hp-coin";
-import { categories, menuItems, sampleReviews } from "@/lib/data/mock-data";
+import { sampleReviews } from "@/lib/data/mock-data";
+import { getCategories, getMenuItems } from "@/lib/data/storage";
+import type { Category, MenuItem } from "@/lib/data/types";
 
 function HeroSection() {
   return (
@@ -32,7 +35,7 @@ function HeroSection() {
             Earn HomelyPoints with every order
           </Badge>
 
-          <h1 className="mb-4 font-serif text-4xl font-bold leading-tight text-background md:text-5xl lg:text-6xl text-balance">
+          <h1 className="mb-4 text-balance font-serif text-4xl font-bold leading-tight text-background md:text-5xl lg:text-6xl">
             Welcome to HOMELY FOODS
           </h1>
 
@@ -86,7 +89,7 @@ function HeroSection() {
   );
 }
 
-function DailySpecialBanner() {
+function DailySpecialBanner({ menuItems }: { menuItems: MenuItem[] }) {
   const special = menuItems.find((item) => item.isDailySpecial);
   if (!special) return null;
 
@@ -94,11 +97,10 @@ function DailySpecialBanner() {
 
   return (
     <section className="border-b border-gold/20 bg-gold/5 py-6">
-      <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 sm:flex-row sm:justify-between lg:px-8">
-        <div className="flex items-center gap-3 text-center sm:text-left">
-          {/* Image */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <div className="flex items-center gap-3">
           {specialImg ? (
-            <div className="relative hidden h-14 w-14 overflow-hidden rounded-xl border border-gold/20 bg-background sm:block">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-gold/20 bg-background">
               <Image
                 src={specialImg}
                 alt={special.name}
@@ -108,16 +110,16 @@ function DailySpecialBanner() {
               />
             </div>
           ) : (
-            <div className="hidden h-12 w-12 items-center justify-center rounded-full border-2 border-gold/30 bg-gold/10 sm:flex">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-gold/30 bg-gold/10">
               <Star className="h-5 w-5 text-gold" />
             </div>
           )}
 
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-gold">
-              {"Today's Special"}
+              Today&apos;s Special
             </p>
-            <p className="font-serif text-lg font-semibold text-foreground">
+            <p className="line-clamp-1 font-serif text-lg font-semibold text-foreground">
               {special.name}
               <span className="ml-2 text-sm text-muted-foreground">
                 AED {special.price}
@@ -141,12 +143,12 @@ function DailySpecialBanner() {
   );
 }
 
-function CategoriesSection() {
+function CategoriesSection({ categories }: { categories: Category[] }) {
   return (
     <section className="py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="mb-10 text-center">
-          <h2 className="mb-2 font-serif text-3xl font-bold text-foreground text-balance">
+          <h2 className="mb-2 text-balance font-serif text-3xl font-bold text-foreground">
             Explore Our Menu
           </h2>
           <p className="text-muted-foreground">
@@ -183,15 +185,15 @@ function CategoriesSection() {
   );
 }
 
-function PopularItemsSection() {
+function PopularItemsSection({ menuItems }: { menuItems: MenuItem[] }) {
   const popular = menuItems.filter((item) => item.isMostOrdered).slice(0, 6);
 
   return (
     <section className="bg-muted/50 py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="mb-10 flex items-end justify-between">
+        <div className="mb-10 flex items-end justify-between gap-4">
           <div>
-            <h2 className="mb-2 font-serif text-3xl font-bold text-foreground text-balance">
+            <h2 className="mb-2 text-balance font-serif text-3xl font-bold text-foreground">
               Most Popular
             </h2>
             <p className="text-muted-foreground">
@@ -225,7 +227,7 @@ function PopularItemsSection() {
   );
 }
 
-function LimitedOffersSection() {
+function LimitedOffersSection({ menuItems }: { menuItems: MenuItem[] }) {
   const offers = menuItems.filter((item) => item.isLimitedOffer);
   if (offers.length === 0) return null;
 
@@ -236,11 +238,11 @@ function LimitedOffersSection() {
           <Badge className="mb-3 bg-blue-offer/10 text-blue-offer hover:bg-blue-offer/20">
             Limited Time Only
           </Badge>
-          <h2 className="mb-2 font-serif text-3xl font-bold text-foreground text-balance">
+          <h2 className="mb-2 text-balance font-serif text-3xl font-bold text-foreground">
             Special Offers
           </h2>
           <p className="text-muted-foreground">
-            {"Don't miss these exclusive dishes - available for a limited time"}
+            Don&apos;t miss these exclusive dishes - available for a limited time
           </p>
         </div>
 
@@ -262,7 +264,7 @@ function HPTeaserSection() {
           <div className="max-w-lg text-center lg:text-left">
             <div className="mb-4 flex items-center justify-center gap-3 lg:justify-start">
               <HPCoin size="lg" />
-              <h2 className="font-serif text-3xl font-bold text-foreground text-balance">
+              <h2 className="text-balance font-serif text-3xl font-bold text-foreground">
                 HomelyPoints
               </h2>
             </div>
@@ -329,13 +331,26 @@ function TestimonialsSection() {
   return (
     <section className="bg-muted/50 py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="mb-10 text-center">
-          <h2 className="mb-2 font-serif text-3xl font-bold text-foreground text-balance">
-            What Our Customers Say
-          </h2>
-          <p className="text-muted-foreground">
-            Real reviews from our valued guests
-          </p>
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <MessageSquareText className="h-5 w-5 text-gold" />
+              <span className="text-sm font-semibold text-gold">Reviews</span>
+            </div>
+            <h2 className="font-serif text-3xl font-bold text-foreground">
+              What People Say
+            </h2>
+            <p className="mt-1 text-muted-foreground">
+              Real reviews from our valued guests
+            </p>
+          </div>
+
+          <Link href="/reviews">
+            <Button variant="outline" className="border-border text-foreground">
+              View Full Reviews
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -357,7 +372,7 @@ function TestimonialsSection() {
                     />
                   ))}
                 </div>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground line-clamp-4">
+                <p className="mb-4 line-clamp-4 text-sm leading-relaxed text-muted-foreground">
                   {`"${review.comment}"`}
                 </p>
                 <div className="flex items-center gap-2">
@@ -389,7 +404,7 @@ function CTABanner() {
   return (
     <section className="bg-foreground py-16">
       <div className="mx-auto max-w-7xl px-4 text-center lg:px-8">
-        <h2 className="mb-3 font-serif text-3xl font-bold text-background text-balance">
+        <h2 className="mb-3 text-balance font-serif text-3xl font-bold text-background">
           Ready to Order?
         </h2>
         <p className="mb-8 text-background/70">
@@ -428,14 +443,48 @@ function CTABanner() {
   );
 }
 
+function useHomeData() {
+  const [mounted, setMounted] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  useEffect(() => {
+    setMounted(true);
+
+    const load = () => {
+      setCategories(getCategories());
+      setMenuItems(getMenuItems());
+    };
+
+    load();
+
+    const onChange = (e: Event) => {
+      const ce = e as CustomEvent<{ scope: string }>;
+      if (
+        ce.detail?.scope === "categories" ||
+        ce.detail?.scope === "menuItems"
+      ) {
+        load();
+      }
+    };
+
+    window.addEventListener("homely_store_changed", onChange);
+    return () => window.removeEventListener("homely_store_changed", onChange);
+  }, []);
+
+  return { mounted, categories, menuItems };
+}
+
 export default function HomePage() {
+  const { mounted, categories, menuItems } = useHomeData();
+
   return (
     <>
       <HeroSection />
-      <DailySpecialBanner />
-      <CategoriesSection />
-      <PopularItemsSection />
-      <LimitedOffersSection />
+      {mounted ? <DailySpecialBanner menuItems={menuItems} /> : null}
+      {mounted ? <CategoriesSection categories={categories} /> : null}
+      {mounted ? <PopularItemsSection menuItems={menuItems} /> : null}
+      {mounted ? <LimitedOffersSection menuItems={menuItems} /> : null}
       <HPTeaserSection />
       <TestimonialsSection />
       <CTABanner />

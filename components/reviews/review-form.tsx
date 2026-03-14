@@ -18,10 +18,6 @@ function clampRating(n: number) {
 
 
 export function ReviewForm(props: {
-  useEffect(() => {
-    console.log("ReviewForm defaultMenuItemId:", props.defaultMenuItemId);
-    console.log("ReviewForm type:", props.type);
-  }, [props.defaultMenuItemId, props.type]);
   type: ReviewType;
   menuItems: MenuItem[];
   defaultMenuItemId?: string;

@@ -41,10 +41,11 @@
       if (!mounted) return [];
   
   
-     let base = getReviews({ type });
-     if (type === "dish" && menuItemIdFromUrl) {
-       base = base.filter((r: any) => r.menuItemId === menuItemIdFromUrl);
-     }
+    let base = getReviews({ type });
+    if (type === "dish" && menuItemIdFromUrl) {
+      base = base.filter((r: any) => r.menuItemId === menuItemIdFromUrl);
+    }
+
   
       const sorted = [...base];
 
@@ -121,10 +122,7 @@
         {/* Form */}
         {open && (
           <div className="rounded-xl border border-border bg-card p-4">
-            {console.log("URL menuItemIdFromUrl:", menuItemIdFromUrl)}
-            {console.log("menuItems contains id?", items.some(i => i.id === menuItemIdFromUrl), items.map(i => i.id))}
-            {console.log("type:", type)}
-            {console.log("defaultMenuItemId:", type === "dish" ? menuItemIdFromUrl : "")}
+           
             <ReviewForm
               type={type}
               menuItems={items}

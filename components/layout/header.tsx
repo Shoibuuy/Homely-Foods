@@ -11,11 +11,17 @@ import {
   LogOut,
   ChevronDown,
   UtensilsCrossed,
+  House,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,32 +38,27 @@ const navLinks = [
   { label: "Home", href: "/" },
   { label: "Menu", href: "/menu" },
   { label: "Reservations", href: "/reservations" },
-  { label: "Reviews", href: "/reviews" },
+  { label: "Orders", href: "/orders" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { itemCount } = useCart();
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const safeUser = mounted ? user : null;
   const safeItemCount = mounted ? itemCount : 0;
-
-useEffect(() => {
-  setMounted(true);
-}, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <UtensilsCrossed className="h-7 w-7 text-gold" />
           <div className="flex flex-col leading-none">
@@ -70,13 +71,16 @@ useEffect(() => {
           </div>
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+        <nav
+          className="hidden items-center gap-1 md:flex"
+          aria-label="Main navigation"
+        >
           {navLinks.map((link) => {
             const isActive =
               link.href === "/"
                 ? pathname === "/"
                 : pathname.startsWith(link.href) && link.href !== "#";
+
             return (
               <Link
                 key={link.label}
@@ -86,21 +90,31 @@ useEffect(() => {
                   isActive
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
-                  link.href === "#" && "pointer-events-none opacity-50"
                 )}
               >
                 {link.label}
-                {isActive && (
+                {isActive ? (
                   <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-gold" />
-                )}
+                ) : null}
               </Link>
             );
           })}
         </nav>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2">
-          {/* Search (placeholder) */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link href="/" aria-label="Go to home">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "text-muted-foreground hover:text-foreground",
+                pathname === "/" && "text-gold",
+              )}
+            >
+              <House className="h-5 w-5" />
+            </Button>
+          </Link>
+
           <Button
             variant="ghost"
             size="icon"
@@ -110,37 +124,34 @@ useEffect(() => {
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* HP Balance */}
-          {user && (
+          {safeUser ? (
             <Link
               href="/profile"
               className="hidden items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1.5 transition-colors hover:bg-gold/20 md:flex"
             >
               <HPCoin size="sm" />
               <span className="text-sm font-semibold text-gold-dark">
-                {user.hpBalance}
+                {safeUser.hpBalance}
               </span>
             </Link>
-          )}
+          ) : null}
 
-          {/* Cart */}
           <Button
             variant="ghost"
             size="icon"
             className="relative text-muted-foreground hover:text-foreground"
             onClick={openCartDrawer}
-            aria-label={`Cart with ${itemCount} items`}
+            aria-label={`Cart with ${safeItemCount} items`}
           >
             <ShoppingCart className="h-5 w-5" />
-            {itemCount > 0 && (
+            {safeItemCount > 0 ? (
               <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-primary-foreground">
-                {itemCount > 99 ? "99+" : itemCount}
+                {safeItemCount > 99 ? "99+" : safeItemCount}
               </span>
-            )}
+            ) : null}
           </Button>
 
-          {/* User Menu / Auth */}
-          {user ? (
+          {safeUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -148,32 +159,52 @@ useEffect(() => {
                   className="hidden gap-1.5 px-2 text-muted-foreground hover:text-foreground md:flex"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/15 text-xs font-bold text-gold-dark">
-                    {user.name.charAt(0).toUpperCase()}
+                    {safeUser.name.charAt(0).toUpperCase()}
                   </div>
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card text-card-foreground">
+
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-card text-card-foreground"
+              >
                 <div className="px-3 py-2">
-                  <p className="text-sm font-medium text-foreground">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {safeUser.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {safeUser.email}
+                  </p>
                 </div>
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     My Profile
                   </Link>
                 </DropdownMenuItem>
-                {user.role === "admin" && (
+
+                <DropdownMenuItem asChild>
+                  <Link href="/orders" className="cursor-pointer">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    My Orders
+                  </Link>
+                </DropdownMenuItem>
+
+                {safeUser.role === "admin" ? (
                   <DropdownMenuItem asChild>
                     <Link href="/admin" className="cursor-pointer">
                       <UtensilsCrossed className="mr-2 h-4 w-4" />
                       Admin Panel
                     </Link>
                   </DropdownMenuItem>
-                )}
+                ) : null}
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
@@ -194,7 +225,6 @@ useEffect(() => {
             </Link>
           )}
 
-          {/* Mobile Menu */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
@@ -206,8 +236,13 @@ useEffect(() => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 bg-card p-0 text-card-foreground">
+
+            <SheetContent
+              side="right"
+              className="w-72 bg-card p-0 text-card-foreground"
+            >
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-border px-4 py-4">
                   <div className="flex items-center gap-2">
@@ -216,6 +251,7 @@ useEffect(() => {
                       HOMELY FOODS
                     </span>
                   </div>
+
                   <Button
                     variant="ghost"
                     size="icon"
@@ -226,31 +262,34 @@ useEffect(() => {
                   </Button>
                 </div>
 
-                {user && (
+                {safeUser ? (
                   <div className="border-b border-border px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/15 text-sm font-bold text-gold-dark">
-                        {user.name.charAt(0).toUpperCase()}
+                        {safeUser.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{user.name}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {safeUser.name}
+                        </p>
                         <div className="flex items-center gap-1">
                           <HPCoin size="sm" />
                           <span className="text-xs font-semibold text-gold-dark">
-                            {user.hpBalance} HP
+                            {safeUser.hpBalance} HP
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <nav className="flex-1 px-2 py-4" aria-label="Mobile navigation">
                   {navLinks.map((link) => {
                     const isActive =
                       link.href === "/"
                         ? pathname === "/"
-                        : pathname.startsWith(link.href) && link.href !== "#";
+                        : pathname.startsWith(link.href);
+
                     return (
                       <Link
                         key={link.label}
@@ -261,31 +300,48 @@ useEffect(() => {
                           isActive
                             ? "bg-gold/10 text-foreground"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                          link.href === "#" && "pointer-events-none opacity-50"
                         )}
                       >
                         {link.label}
                       </Link>
                     );
                   })}
-                  {user && (
-                    <Link
-                      href="/profile"
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                        pathname === "/profile"
-                          ? "bg-gold/10 text-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      My Profile
-                    </Link>
-                  )}
+
+                  {safeUser ? (
+                    <>
+                      <Link
+                        href="/profile"
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          pathname === "/profile"
+                            ? "bg-gold/10 text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        My Profile
+                      </Link>
+
+                      {safeUser.role === "admin" ? (
+                        <Link
+                          href="/admin"
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                            pathname.startsWith("/admin")
+                              ? "bg-gold/10 text-foreground"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          )}
+                        >
+                          Admin Panel
+                        </Link>
+                      ) : null}
+                    </>
+                  ) : null}
                 </nav>
 
                 <div className="border-t border-border px-4 py-4">
-                  {user ? (
+                  {safeUser ? (
                     <Button
                       variant="outline"
                       className="w-full text-foreground"

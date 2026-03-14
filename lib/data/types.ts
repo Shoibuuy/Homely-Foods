@@ -34,13 +34,16 @@ export interface MenuItem {
 }
 
 export interface CartItem {
+  id: string;
   menuItem: MenuItem;
   quantity: number;
   selectedAddOns: AddOn[];
+  note?: string;
 }
 
 export type OrderStatus =
-  | "Order Placed"
+  | "Pending"
+  | "Confirmed"
   | "Preparing"
   | "Out for Delivery"
   | "Delivered"
@@ -51,21 +54,46 @@ export type PaymentMethod = "cash" | "card";
 export interface DeliveryAddress {
   fullName: string;
   phone: string;
-  address: string;
+  street: string;
+  apartment?: string;
+  floor?: string;
+  room?: string;
   area: string;
-  notes: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
 }
 
 export interface Order {
   id: string;
+  orderNo: string;
   userId: string;
   items: CartItem[];
-  total: number;
+
   subtotal: number;
+  deliveryFee?: number;
+  discount?: number;
+  total: number;
+
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   deliveryAddress: DeliveryAddress;
   hpEarned: number;
+
+  lastContactedAt?: string;
+  lastContactedStatus?: OrderStatus;
+
+  confirmedAt?: string;
+  preparingAt?: string;
+  outForDeliveryAt?: string;
+  deliveredAt?: string;
+  cancelledAt?: string;
+
+  confirmedEtaMinutes?: number;
+  adminRemark?: string;
+
+  statusUpdatedAt?: string;
+
   createdAt: string;
 }
 
@@ -83,6 +111,7 @@ export interface HPTransaction {
 export type UserRole = "customer" | "admin";
 
 export interface User {
+  [x: string]: any;
   id: string;
   name: string;
   email: string;
@@ -122,28 +151,24 @@ export type ReviewType = "experience" | "dish";
 export interface ReviewBase {
   id: string;
   type: ReviewType;
-
-  // user snapshot (no approval system)
   userId: string | null;
   userName: string;
   userEmail?: string;
-
-  rating: number; // 1-5
+  rating: number;
   comment: string;
-
-  createdAt: string; // ISO
+  createdAt: string;
 }
 
 export interface ExperienceReview extends ReviewBase {
   type: "experience";
-  visitDate?: string; // yyyy-mm-dd (optional)
-  tags?: string[]; // optional (service, ambience, etc.)
+  visitDate?: string;
+  tags?: string[];
 }
 
 export interface DishReview extends ReviewBase {
   type: "dish";
   menuItemId: string;
-  menuItemName: string;// snapshot for safety
+  menuItemName: string;
 }
 
 export type Review = ExperienceReview | DishReview;
@@ -152,7 +177,8 @@ export type ReservationStatus =
   | "pending"
   | "confirmed"
   | "cancelled"
-  | "completed";
+  | "completed"
+  | "not-visited";
 
 export interface Reservation {
   id: string;
@@ -162,14 +188,16 @@ export interface Reservation {
   phone: string;
 
   guests: number;
-  date: string; // yyyy-mm-dd
-  time: string; // HH:mm
+  date: string;
+  time: string;
 
   notes?: string;
 
   status: ReservationStatus;
-  createdAt: string; // ISO
+
+  completedAt?: string;
+  notVisitedAt?: string;
+  notVisitedReason?: string;
+
+  createdAt: string;
 }
-
-
- 

@@ -24,7 +24,7 @@ export function MenuCard({ item, className }: MenuCardProps) {
     e.preventDefault();
     e.stopPropagation();
     if (!item.available) return;
-    addItem(item, 1, []);
+    addItem(item, 1, [], undefined);
     toast.success(`${item.name} added to cart`, {
       description: `+${item.hpReward} HP will be earned`,
       action: {
