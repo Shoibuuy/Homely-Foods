@@ -479,16 +479,6 @@ export default function OrderDetailsPage() {
                               </p>
                             ) : null}
 
-                            {formatTrackingTime(
-                              getOrderStatusTimestamp(order, step),
-                            ) ? (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {formatTrackingTime(
-                                  getOrderStatusTimestamp(order, step),
-                                )}
-                              </p>
-                            ) : null}
-
                             {step === "Pending" ? (
                               <p className="text-sm text-muted-foreground">
                                 Your order has been received and is awaiting
@@ -664,6 +654,17 @@ export default function OrderDetailsPage() {
                                   </p>
                                 </div>
                               ) : null}
+
+                              {item.redemption ? (
+                                <div className="mt-2 rounded-xl border border-blue-offer/20 bg-blue-offer/10 px-2.5 py-2">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-offer">
+                                    Redeemed with HomelyPoints
+                                  </p>
+                                  <p className="mt-1 text-[11px] leading-5 text-blue-offer">
+                                    {item.redemption.hpCostPerUnit * item.quantity} HP
+                                  </p>
+                                </div>
+                              ) : null}
                             </div>
 
                             <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
@@ -761,6 +762,15 @@ export default function OrderDetailsPage() {
                     +{order.hpEarned ?? 0} HP
                   </span>
                 </div>
+
+                {(order.hpRedeemed ?? 0) > 0 ? (
+                  <div className="flex items-center justify-between rounded-lg bg-blue-offer/10 px-3 py-2">
+                    <span className="text-muted-foreground">HP Redeemed</span>
+                    <span className="font-semibold text-blue-offer">
+                      -{order.hpRedeemed} HP
+                    </span>
+                  </div>
+                ) : null}
 
                 {isDelivered ? (
                   <div className="rounded-lg border border-green/20 bg-green/5 p-3">

@@ -14,6 +14,7 @@ import {
   House,
   Bell,
   Users,
+  CalendarDays,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,13 @@ export function SiteHeader() {
                   <Link href="/orders" className="cursor-pointer">
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     My Orders
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href="/reservations" className="cursor-pointer">
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    My Reservations
                   </Link>
                 </DropdownMenuItem>
 

@@ -358,6 +358,12 @@ export default function CustomerOrdersPage() {
     <HPCoin size="sm" />
     +{order.hpEarned ?? 0} HP
   </div>
+  {(order.hpRedeemed ?? 0) > 0 ? (
+    <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-blue-offer px-2.5 py-1 text-[11px] font-medium text-white">
+      <HPCoin size="sm" />
+      -{order.hpRedeemed} HP
+    </div>
+  ) : null}
 </div>
 
 

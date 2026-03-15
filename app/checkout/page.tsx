@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   calcOrderPricing,
   calcCartItemLineTotal,
+  calcRedeemedHPTotal,
 } from "@/lib/orders/pricing";
 import { formatAED } from "@/lib/utils";
 import {
@@ -33,7 +34,7 @@ import { useAuth, useCart } from "@/lib/data/store";
 import { HPCoin } from "@/components/hp-coin";
 import { toast } from "sonner";
 import type { Order, PaymentMethod, DeliveryAddress } from "@/lib/data/types";
-import { addOrder, nextOrderNo, generateId } from "@/lib/data/storage";
+import { addOrder, nextOrderNo, generateId, settleOrderHP } from "@/lib/data/storage";
 import { PriceBreakdown } from "@/components/orders/price-breakdown";
 import { OrderItemEditorDialog } from "@/components/orders/order-item-editor-dialog";
 
@@ -42,7 +43,7 @@ type CheckoutStep = "details" | "confirm";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user, addHP } = useAuth();
+  const { user, refreshUser } = useAuth();
   const {
     items,
     estimatedHP,
@@ -71,6 +72,9 @@ export default function CheckoutPage() {
   
 
   const pricing = useMemo(() => calcOrderPricing({ items }), [items]);
+  const hpRedeemedTotal = useMemo(() => calcRedeemedHPTotal(items), [items]);
+  const userBalance = user?.hpBalance ?? 0;
+  const hasInsufficientHP = !!user && hpRedeemedTotal > userBalance;
   const editingItem = useMemo(
     () => items.find((item) => item.id === editingItemId) ?? null,
     [items, editingItemId],
@@ -122,6 +126,10 @@ export default function CheckoutPage() {
 
   const handleReviewOrder = () => {
     if (!validate()) return;
+    if (hasInsufficientHP) {
+      toast.error("Insufficient HomelyPoints for redeemed items in cart.");
+      return;
+    }
     setStep("confirm");
   };
 
@@ -150,15 +158,39 @@ export default function CheckoutPage() {
         paymentMethod,
         deliveryAddress: { ...normalizedAddress },
         hpEarned: estimatedHP,
+        hpRedeemed: hpRedeemedTotal,
         createdAt: new Date().toISOString(),
       };
 
+      if (hpRedeemedTotal > user.hpBalance) {
+        toast.error("Insufficient HomelyPoints for redemption.");
+        setLoading(false);
+        return;
+      }
+
       addOrder(order);
-      addHP(estimatedHP, `Earned from order ${order.orderNo}`);
+      const settlement = settleOrderHP({
+        userId: user.id,
+        orderId: order.id,
+        orderNo: order.orderNo,
+        hpEarned: estimatedHP,
+        hpRedeemed: hpRedeemedTotal,
+      });
+
+      if (!settlement.success) {
+        toast.error(settlement.error || "Failed to settle HomelyPoints.");
+        setLoading(false);
+        return;
+      }
+
+      refreshUser();
       clearCart();
 
       toast.success("Order received successfully", {
-        description: `You earned ${estimatedHP} HomelyPoints.`,
+        description:
+          hpRedeemedTotal > 0
+            ? `Redeemed ${hpRedeemedTotal} HP and earned ${estimatedHP} HP.`
+            : `You earned ${estimatedHP} HomelyPoints.`,
       });
 
       router.replace(`/orders/success/${order.id}`);
@@ -280,6 +312,12 @@ export default function CheckoutPage() {
                     {ci.note?.trim() ? (
                       <p className="mt-1 text-[10px] text-amber-800">
                         Note: {ci.note.trim()}
+                      </p>
+                    ) : null}
+
+                    {ci.redemption ? (
+                      <p className="mt-1 text-[10px] font-semibold text-blue-offer">
+                        Redeemed with HP: {ci.redemption.hpCostPerUnit * ci.quantity} HP
                       </p>
                     ) : null}
                   </div>
@@ -579,18 +617,33 @@ export default function CheckoutPage() {
                     total={pricing.total}
                   />
 
+                  {hpRedeemedTotal > 0 ? (
+                    <div className="mt-3 rounded-xl border border-blue-offer/20 bg-blue-offer/10 p-3">
+                      <p className="text-sm font-medium text-foreground">
+                        Redeeming {hpRedeemedTotal} HP on this order
+                      </p>
+                    </div>
+                  ) : null}
+
                   <div className="mt-4 rounded-xl border border-gold/20 bg-gold/5 p-3">
                     <div className="flex items-center gap-2">
                       <HPCoin size="sm" />
                       <p className="text-sm font-medium text-foreground">
-                        You’ll earn {estimatedHP} HP
+                        You will earn {estimatedHP} HP
                       </p>
                     </div>
                   </div>
 
+                  {hasInsufficientHP ? (
+                    <p className="mt-2 text-xs text-destructive">
+                      You need {hpRedeemedTotal - userBalance} more HP to place this order.
+                    </p>
+                  ) : null}
+
                   <Button
                     className="mt-4 w-full bg-gold text-primary-foreground hover:bg-gold-dark"
                     onClick={handleReviewOrder}
+                    disabled={hasInsufficientHP}
                   >
                     Review Order
                   </Button>
@@ -721,11 +774,19 @@ export default function CheckoutPage() {
                         total={pricing.total}
                       />
 
+                      {hpRedeemedTotal > 0 ? (
+                        <div className="mt-3 rounded-xl border border-blue-offer/20 bg-blue-offer/10 p-3">
+                          <p className="text-sm font-medium text-foreground">
+                            Redeeming {hpRedeemedTotal} HP on this order
+                          </p>
+                        </div>
+                      ) : null}
+
                       <div className="mt-4 rounded-xl border border-gold/20 bg-gold/5 p-3">
                         <div className="flex items-center gap-2">
                           <HPCoin size="sm" />
                           <p className="text-sm font-medium text-foreground">
-                            You’ll earn {estimatedHP} HP
+                            You will earn {estimatedHP} HP
                           </p>
                         </div>
                       </div>
@@ -746,7 +807,7 @@ export default function CheckoutPage() {
                   <Button
                     className="flex-1 bg-gold text-primary-foreground hover:bg-gold-dark"
                     onClick={handlePlaceOrder}
-                    disabled={loading}
+                    disabled={loading || hasInsufficientHP}
                   >
                     {loading
                       ? "Placing Order..."

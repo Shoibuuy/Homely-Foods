@@ -14,6 +14,8 @@ import {
   Star,
   Info,
   ShoppingBag,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,9 +106,11 @@ function RedeemableItemCard({
 }: {
   item: MenuItem;
   userBalance: number;
-  onRedeem: (item: MenuItem) => void;
+  onRedeem: (item: MenuItem, quantity: number) => void;
 }) {
-  const canRedeem = userBalance >= item.hpRedeemCost;
+  const [quantity, setQuantity] = useState(1);
+  const requiredHP = item.hpRedeemCost * quantity;
+  const canRedeem = userBalance >= requiredHP;
   const progress = Math.min((userBalance / item.hpRedeemCost) * 100, 100);
 
   return (
@@ -135,13 +139,50 @@ function RedeemableItemCard({
           {item.description}
         </p>
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{formatAED(item.price)}</span>
+            <span>/</span>
             <HPCoin size="sm" />
             <span className="font-bold text-gold-dark">{item.hpRedeemCost}</span>
             <span className="text-xs text-muted-foreground">HP</span>
           </div>
+          <Badge variant={canRedeem ? "secondary" : "outline"} className={canRedeem ? "bg-gold/10 text-gold-dark" : ""}>
+            {canRedeem ? "Redeemable" : "Not enough HP"}
+          </Badge>
+        </div>
 
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">Quantity</span>
+          <div className="inline-flex items-center gap-1 rounded-full border border-border px-1 py-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
+            <span className="min-w-6 text-center text-sm font-semibold text-foreground">{quantity}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => setQuantity((prev) => prev + 1)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <HPCoin size="sm" />
+            <span className="font-bold text-gold-dark">{requiredHP}</span>
+            <span className="text-xs text-muted-foreground">HP total</span>
+          </div>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -149,20 +190,20 @@ function RedeemableItemCard({
                   <Button
                     size="sm"
                     disabled={!canRedeem}
-                    onClick={() => onRedeem(item)}
+                    onClick={() => onRedeem(item, quantity)}
                     className={cn(
                       canRedeem
                         ? "bg-gold text-primary-foreground hover:bg-gold-dark"
                         : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {canRedeem ? "Redeem" : `Need ${item.hpRedeemCost - userBalance} more`}
+                    {canRedeem ? "Add Redeem Item" : `Need ${requiredHP - userBalance} more`}
                   </Button>
                 </div>
               </TooltipTrigger>
               {!canRedeem && (
                 <TooltipContent>
-                  <p>You need {item.hpRedeemCost - userBalance} more HP to redeem this item</p>
+                  <p>You need {requiredHP - userBalance} more HP for this quantity</p>
                 </TooltipContent>
               )}
             </Tooltip>
@@ -179,6 +220,7 @@ export default function PointsPage() {
 
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [redeemCategory, setRedeemCategory] = useState("all");
 
   useEffect(() => {
     setMounted(true);
@@ -216,12 +258,34 @@ export default function PointsPage() {
     return { totalEarned, totalRedeemed, ordersWithHP };
   }, [transactions, orders]);
 
-  const handleRedeem = (item: MenuItem) => {
-    if (!user) return;
+  const redeemCategories = useMemo(() => {
+    const categories = new Set<string>();
+    redeemableItems.forEach((item) => categories.add(item.categorySlug));
+    return ["all", ...Array.from(categories)];
+  }, [redeemableItems]);
 
-    // Add item to cart with note that it's redeemed with HP
-    addItem(item, 1, [], `Redeemed with ${item.hpRedeemCost} HomelyPoints`);
-    toast.success(`${item.name} added to cart! HP will be deducted at checkout.`);
+  const filteredRedeemables = useMemo(() => {
+    if (redeemCategory === "all") return redeemableItems;
+    return redeemableItems.filter((item) => item.categorySlug === redeemCategory);
+  }, [redeemableItems, redeemCategory]);
+
+  const handleRedeem = (item: MenuItem, quantity: number) => {
+    if (!user) return;
+    const hpNeeded = item.hpRedeemCost * quantity;
+
+    if (hpNeeded > user.hpBalance) {
+      toast.error(`You need ${hpNeeded - user.hpBalance} more HP for this redemption.`);
+      return;
+    }
+
+    addItem(
+      item,
+      quantity,
+      [],
+      `Redeem with ${item.hpRedeemCost} HP per item`,
+      { redemption: { mode: "hp", hpCostPerUnit: item.hpRedeemCost } }
+    );
+    toast.success(`${item.name} added as redemption item. ${hpNeeded} HP will be deducted at checkout.`);
   };
 
   if (!user) {
@@ -463,6 +527,23 @@ export default function PointsPage() {
               </p>
             </div>
 
+            {redeemableItems.length > 0 ? (
+              <div className="mb-5 flex flex-wrap gap-2">
+                {redeemCategories.map((cat) => (
+                  <Button
+                    key={cat}
+                    type="button"
+                    size="sm"
+                    variant={redeemCategory === cat ? "default" : "outline"}
+                    className={redeemCategory === cat ? "bg-gold text-primary-foreground hover:bg-gold-dark" : ""}
+                    onClick={() => setRedeemCategory(cat)}
+                  >
+                    {cat === "all" ? "All Categories" : cat.replace(/-/g, " ")}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+
             {redeemableItems.length === 0 ? (
               <Card className="border-dashed border-border bg-card">
                 <CardContent className="flex flex-col items-center justify-center py-16">
@@ -470,9 +551,16 @@ export default function PointsPage() {
                   <p className="text-sm text-muted-foreground">No redeemable items available</p>
                 </CardContent>
               </Card>
+            ) : filteredRedeemables.length === 0 ? (
+              <Card className="border-dashed border-border bg-card">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Gift className="mb-3 h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">No items in this category</p>
+                </CardContent>
+              </Card>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {redeemableItems.map((item) => (
+                {filteredRedeemables.map((item) => (
                   <RedeemableItemCard
                     key={item.id}
                     item={item}

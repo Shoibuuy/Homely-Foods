@@ -26,7 +26,7 @@ export function calcAddOnTotal(addOns: Array<{ price: number; qty?: number }>): 
 }
 
 export function calcCartItemUnitPrice(ci: CartItem): number {
-  const base = ci.menuItem.price;
+  const base = ci.redemption ? 0 : ci.menuItem.price;
   const addOns = calcAddOnTotal(ci.selectedAddOns || []);
   return base + addOns;
 }
@@ -35,8 +35,26 @@ export function calcCartItemLineTotal(item: CartItem): number {
   return calcCartItemUnitPrice(item) * item.quantity;
 }
 
+export function calcCartItemRedeemedHP(item: CartItem): number {
+  if (!item.redemption) return 0;
+  return item.redemption.hpCostPerUnit * item.quantity;
+}
+
+export function calcCartItemRedeemDiscount(item: CartItem): number {
+  if (!item.redemption) return 0;
+  return item.menuItem.price * item.quantity;
+}
+
 export function calcSubtotal(items: CartItem[]): number {
   return items.reduce((sum, item) => sum + calcCartItemLineTotal(item), 0);
+}
+
+export function calcRedeemedHPTotal(items: CartItem[]): number {
+  return items.reduce((sum, item) => sum + calcCartItemRedeemedHP(item), 0);
+}
+
+export function calcRedeemedAEDValue(items: CartItem[]): number {
+  return items.reduce((sum, item) => sum + calcCartItemRedeemDiscount(item), 0);
 }
 
 export function calcDeliveryFee(

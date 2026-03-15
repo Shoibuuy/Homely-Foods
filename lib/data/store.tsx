@@ -15,7 +15,6 @@ import type {
   CartItem,
   MenuItem,
   AddOn,
-  HPTransaction,
   AppNotification,
 } from "./types";
 import {
@@ -36,6 +35,8 @@ import {
   markAllNotificationsRead,
   deleteNotification as deleteNotificationFromStorage,
   clearAllNotifications,
+  recordHPEarned,
+  recordHPRedeemed,
 } from "./storage";
 
 const STORE_EVENT = "homely_store_changed";
@@ -190,15 +191,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
     (amount: number, description: string) => {
       if (!user) return;
 
-      const tx: HPTransaction = {
-        id: generateId("hp"),
-        userId: user.id,
-        amount,
-        type: amount > 0 ? "earned" : "redeemed",
-        description,
-        createdAt: new Date().toISOString(),
-      };
-
       storeAddNotification({
         id: generateId("notif"),
         userId: user.id,
@@ -213,8 +205,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
       updateUser(updated);
       setUser(updated);
       setCurrentUser(updated);
-
-      void tx;
+      if (amount > 0) {
+        recordHPEarned(user.id, amount, description);
+      } else if (amount < 0) {
+        recordHPRedeemed(user.id, Math.abs(amount), description);
+      }
     },
     [user]
   );
@@ -244,7 +239,10 @@ interface CartContextType {
     menuItem: MenuItem,
     quantity: number,
     addOns: AddOn[],
-    note?: string
+    note?: string,
+    options?: {
+      redemption?: CartItem["redemption"];
+    }
   ) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -293,14 +291,21 @@ function CartProvider({ children }: { children: ReactNode }) {
       menuItem: MenuItem,
       quantity: number,
       addOns: AddOn[],
-      note?: string
+      note?: string,
+      options?: {
+        redemption?: CartItem["redemption"];
+      }
     ) => {
       setItems((currentItems) => {
         const normalizedNote = note?.trim() || undefined;
+        const redemption = options?.redemption;
 
         const existing = currentItems.find((i) => {
           const sameMenuItem = i.menuItem.id === menuItem.id;
           const sameNote = (i.note?.trim() || undefined) === normalizedNote;
+          const sameRedemption =
+            (i.redemption?.mode ?? null) === (redemption?.mode ?? null) &&
+            (i.redemption?.hpCostPerUnit ?? 0) === (redemption?.hpCostPerUnit ?? 0);
 
           const currentAddOnIds = getSortedAddOnIds(i.selectedAddOns);
           const nextAddOnIds = getSortedAddOnIds(addOns);
@@ -309,7 +314,7 @@ function CartProvider({ children }: { children: ReactNode }) {
             currentAddOnIds.length === nextAddOnIds.length &&
             currentAddOnIds.every((id, idx) => id === nextAddOnIds[idx]);
 
-          return sameMenuItem && sameNote && sameAddOns;
+          return sameMenuItem && sameNote && sameAddOns && sameRedemption;
         });
 
         let nextItems: CartItem[];
@@ -332,6 +337,7 @@ function CartProvider({ children }: { children: ReactNode }) {
               quantity,
               selectedAddOns: addOns,
               note: normalizedNote,
+              redemption,
             },
           ];
         }

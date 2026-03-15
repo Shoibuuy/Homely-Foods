@@ -286,8 +286,10 @@ export function calculateHP(
   orderTotal: number,
   config: HPConfig
 ): number {
+  const eligibleItems = items.filter((item) => !item.redemption);
+
   if (config.mode === "per-item") {
-    return items.reduce(
+    return eligibleItems.reduce(
       (acc, item) => acc + item.menuItem.hpReward * item.quantity,
       0
     );
@@ -985,7 +987,7 @@ export function validateReferralCode(code: string): { valid: boolean; referrerId
 
 export function processReferral(referrerId: string, newUserId: string): void {
   // Create referral record
-  createReferral(referrerId, newUserId);
+  const referral = createReferral(referrerId, newUserId);
   
   // Award bonus HP to referrer
   const users = getUsers();
@@ -994,6 +996,15 @@ export function processReferral(referrerId: string, newUserId: string): void {
     const updatedReferrer = { ...referrer, hpBalance: referrer.hpBalance + 10 };
     updateUser(updatedReferrer);
     recordHPBonus(referrerId, 10, "Referral bonus - new friend signed up");
+    addNotification({
+      id: generateId("notif"),
+      userId: referrerId,
+      type: "points",
+      title: "Referral Bonus Earned",
+      message: `You earned 10 HP from referral ${referral.referralCode}.`,
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
   }
   
   // Award bonus HP to new user
@@ -1002,7 +1013,79 @@ export function processReferral(referrerId: string, newUserId: string): void {
     const updatedNewUser = { ...newUser, hpBalance: newUser.hpBalance + 5 };
     updateUser(updatedNewUser);
     recordHPBonus(newUserId, 5, "Welcome bonus - referred by a friend");
+    addNotification({
+      id: generateId("notif"),
+      userId: newUserId,
+      type: "points",
+      title: "Referral Welcome Bonus",
+      message: "You earned 5 bonus HP for signing up with a referral code.",
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
   }
+}
+
+export function settleOrderHP(params: {
+  userId: string;
+  orderId: string;
+  orderNo: string;
+  hpEarned: number;
+  hpRedeemed: number;
+}): { success: boolean; error?: string; balance?: number } {
+  const users = getUsers();
+  const user = users.find((u) => u.id === params.userId);
+
+  if (!user) {
+    return { success: false, error: "User not found." };
+  }
+
+  const hpRedeemed = Math.max(0, Math.floor(params.hpRedeemed || 0));
+  const hpEarned = Math.max(0, Math.floor(params.hpEarned || 0));
+
+  if (hpRedeemed > user.hpBalance) {
+    return { success: false, error: "Insufficient HomelyPoints for redemption." };
+  }
+
+  const nextBalance = user.hpBalance - hpRedeemed + hpEarned;
+  updateUser({ ...user, hpBalance: nextBalance });
+
+  if (hpRedeemed > 0) {
+    recordHPRedeemed(
+      user.id,
+      hpRedeemed,
+      `Redeemed on order ${params.orderNo}`,
+      params.orderId
+    );
+    addNotification({
+      id: generateId("notif"),
+      userId: user.id,
+      title: "Points Redeemed",
+      message: `-${hpRedeemed} HP used on order ${params.orderNo}.`,
+      type: "points",
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  if (hpEarned > 0) {
+    recordHPEarned(
+      user.id,
+      hpEarned,
+      `Earned from order ${params.orderNo}`,
+      params.orderId
+    );
+    addNotification({
+      id: generateId("notif"),
+      userId: user.id,
+      title: "Points Earned",
+      message: `+${hpEarned} HP earned from order ${params.orderNo}.`,
+      type: "points",
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  return { success: true, balance: nextBalance };
 }
 
 // ─── Redeemable Items ────────────────────────────────────────────

@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useCart } from "@/lib/data/store";
+import { useAuth, useCart } from "@/lib/data/store";
 import { HPBadge } from "@/components/hp-coin";
 import { OrderItemEditorDialog } from "@/components/orders/order-item-editor-dialog";
 import { formatAED } from "@/lib/utils";
@@ -23,10 +23,12 @@ import { getCartItemCount } from "@/lib/orders/selectors";
 import {
   calcCartItemLineTotal,
   calcOrderPricing,
+  calcRedeemedHPTotal,
   DEFAULT_PRICING_RULES,
 } from "@/lib/orders/pricing";
 
 export default function CartPage() {
+  const { user } = useAuth();
   const {
     items,
     updateQuantity,
@@ -38,6 +40,9 @@ export default function CartPage() {
 
   const itemCount = getCartItemCount(items);
   const pricing = calcOrderPricing({ items });
+  const hpRedeemedTotal = useMemo(() => calcRedeemedHPTotal(items), [items]);
+  const userBalance = user?.hpBalance ?? 0;
+  const hasInsufficientHP = hpRedeemedTotal > userBalance;
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -240,6 +245,17 @@ export default function CartPage() {
                                 </p>
                               </div>
                             ) : null}
+
+                            {cartItem.redemption ? (
+                              <div className="mt-2 rounded-xl border border-blue-offer/20 bg-blue-offer/10 px-2.5 py-2">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-offer">
+                                  Redeem with HomelyPoints
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-blue-offer">
+                                  {cartItem.redemption.hpCostPerUnit * cartItem.quantity} HP for this line item
+                                </p>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
 
@@ -280,11 +296,15 @@ export default function CartPage() {
                             </p>
 
                             <div>
-                              <HPBadge
-                                amount={
-                                  cartItem.menuItem.hpReward * cartItem.quantity
-                                }
-                              />
+                              {cartItem.redemption ? (
+                                <span className="text-xs font-semibold text-blue-offer">Redeemed item</span>
+                              ) : (
+                                <HPBadge
+                                  amount={
+                                    cartItem.menuItem.hpReward * cartItem.quantity
+                                  }
+                                />
+                              )}
                             </div>
 
                             <Button
@@ -346,6 +366,13 @@ export default function CartPage() {
                     <span className="text-muted-foreground">Points to earn</span>
                     <HPBadge amount={estimatedHP} />
                   </div>
+
+                  {hpRedeemedTotal > 0 ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Points to redeem</span>
+                      <span className="text-sm font-semibold text-blue-offer">{hpRedeemedTotal} HP</span>
+                    </div>
+                  ) : null}
                 </div>
 
                 <Separator className="my-4" />
@@ -366,8 +393,17 @@ export default function CartPage() {
                   </div>
                 ) : null}
 
+                {hasInsufficientHP ? (
+                  <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/5 p-2.5 text-[11px] text-destructive">
+                    You need {hpRedeemedTotal - userBalance} more HP for redeemed items in cart.
+                  </div>
+                ) : null}
+
                 <Link href="/checkout">
-                  <Button className="w-full bg-gold text-primary-foreground hover:bg-gold-dark">
+                  <Button
+                    className="w-full bg-gold text-primary-foreground hover:bg-gold-dark"
+                    disabled={hasInsufficientHP}
+                  >
                     Proceed to Checkout
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>

@@ -630,6 +630,12 @@ export default function ProfilePage() {
 
                 {/* Quick Links */}
                 <div className="grid grid-cols-2 gap-2 mb-5">
+                  <Link href="/reservations">
+                    <Button variant="outline" size="sm" className="w-full justify-start text-foreground">
+                      <CalendarDays className="mr-2 h-4 w-4 text-gold" />
+                      Reservations
+                    </Button>
+                  </Link>
                   <Link href="/points">
                     <Button variant="outline" size="sm" className="w-full justify-start text-foreground">
                       <Coins className="mr-2 h-4 w-4 text-gold" />

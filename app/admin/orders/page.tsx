@@ -564,7 +564,14 @@ export default function AdminOrdersPage() {
                         </td>
 
                         <td className="px-4 py-3 font-medium text-foreground">
-                          {formatAED(order.total)}
+                          <div className="flex flex-col">
+                            <span>{formatAED(order.total)}</span>
+                            {(order.hpRedeemed ?? 0) > 0 ? (
+                              <span className="text-[11px] font-medium text-blue-offer">
+                                -{order.hpRedeemed} HP redeemed
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
 
                         <td className="px-4 py-3 text-xs capitalize text-muted-foreground">
@@ -753,6 +760,9 @@ export default function AdminOrdersPage() {
                         (detailOrder.discount
                           ? `Discount: -${formatAED(detailOrder.discount)}\n`
                           : "") +
+                        (detailOrder.hpRedeemed
+                          ? `HP Redeemed: -${detailOrder.hpRedeemed} HP\n`
+                          : "") +
                         `Total: ${formatAED(detailOrder.total)}\n`;
 
                       navigator.clipboard.writeText(text);
@@ -870,6 +880,15 @@ export default function AdminOrdersPage() {
                           +{detailOrder.hpEarned} HP
                         </p>
                       </div>
+
+                      {(detailOrder.hpRedeemed ?? 0) > 0 ? (
+                        <div>
+                          <p className="text-muted-foreground">HP Redeemed</p>
+                          <p className="font-medium text-blue-offer">
+                            -{detailOrder.hpRedeemed} HP
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="rounded-xl border border-border bg-muted/20 p-4">
@@ -1179,6 +1198,17 @@ export default function AdminOrdersPage() {
                                   </p>
                                   <p className="mt-0.5 text-[11px] text-amber-900">
                                     {item.note.trim()}
+                                  </p>
+                                </div>
+                              ) : null}
+
+                              {item.redemption ? (
+                                <div className="mt-1 rounded-md border border-blue-offer/20 bg-blue-offer/10 px-2.5 py-1.5">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-offer">
+                                    Redeemed with HP
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-blue-offer">
+                                    {item.redemption.hpCostPerUnit * item.quantity} HP
                                   </p>
                                 </div>
                               ) : null}

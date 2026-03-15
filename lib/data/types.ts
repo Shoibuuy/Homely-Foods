@@ -39,6 +39,10 @@ export interface CartItem {
   quantity: number;
   selectedAddOns: AddOn[];
   note?: string;
+  redemption?: {
+    mode: "hp";
+    hpCostPerUnit: number;
+  };
 }
 
 export type OrderStatus =
@@ -79,6 +83,7 @@ export interface Order {
   paymentMethod: PaymentMethod;
   deliveryAddress: DeliveryAddress;
   hpEarned: number;
+  hpRedeemed?: number;
 
   lastContactedAt?: string;
   lastContactedStatus?: OrderStatus;

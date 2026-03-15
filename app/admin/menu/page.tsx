@@ -299,7 +299,8 @@ if (sp.has("edit")) {
                   <th className="px-4 py-3">Item</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Price</th>
-                  <th className="px-4 py-3">HP</th>
+                  <th className="px-4 py-3">HP Reward</th>
+                  <th className="px-4 py-3">Redeem</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -308,7 +309,7 @@ if (sp.has("edit")) {
                 {filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="py-12 text-center text-muted-foreground"
                     >
                       No menu items found
@@ -353,6 +354,17 @@ if (sp.has("edit")) {
                       </td>
                       <td className="px-4 py-3 text-gold-dark">
                         +{item.hpReward}
+                      </td>
+                      <td className="px-4 py-3">
+                        {item.hpRedeemCost > 0 ? (
+                          <Badge className="bg-blue-offer/10 text-blue-offer border-blue-offer/30 text-xs">
+                            {item.hpRedeemCost} HP
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            Not redeemable
+                          </Badge>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -504,20 +516,41 @@ if (sp.has("edit")) {
                   }
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="hpRedeem" className="text-foreground">HP Redeem Cost</Label>
-                <Input
-                  id="hpRedeem"
-                  type="number"
-                  min={0}
-                  value={form.hpRedeemCost || ""}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      hpRedeemCost: parseInt(e.target.value) || 0,
-                    }))
-                  }
-                />
+              <div className="grid gap-2 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-foreground">Redeemable with HP</Label>
+                  <Switch
+                    checked={form.hpRedeemCost > 0}
+                    onCheckedChange={(checked) =>
+                      setForm((f) => ({
+                        ...f,
+                        hpRedeemCost: checked
+                          ? f.hpRedeemCost > 0
+                            ? f.hpRedeemCost
+                            : Math.max(1, Math.floor(f.price))
+                          : 0,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="hpRedeem" className="text-foreground">
+                    HP Redeem Cost
+                  </Label>
+                  <Input
+                    id="hpRedeem"
+                    type="number"
+                    min={0}
+                    disabled={form.hpRedeemCost <= 0}
+                    value={form.hpRedeemCost || ""}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        hpRedeemCost: parseInt(e.target.value) || 0,
+                      }))
+                    }
+                  />
+                </div>
               </div>
             </div>
 

@@ -375,6 +375,22 @@ export default function OrderSuccessPage() {
                         </div>
                       </div>
                     </div>
+
+                    {(currentOrder.hpRedeemed ?? 0) > 0 ? (
+                      <div className="rounded-2xl border border-blue-offer/20 bg-blue-offer/10 p-4">
+                        <div className="flex items-center gap-3">
+                          <HPCoin size="lg" />
+                          <div>
+                            <p className="font-serif text-xl font-bold text-foreground">
+                              -{currentOrder.hpRedeemed} HP
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              HomelyPoints redeemed
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
