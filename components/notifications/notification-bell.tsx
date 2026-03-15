@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Bell, Package, Gift, CalendarDays, MessageCircle, CheckCheck } from "lucide-react";
+import { Bell, Package, Gift, CalendarDays, MessageCircle, CheckCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,7 +13,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications, useAuth } from "@/lib/data/store";
-import { markAllNotificationsRead } from "@/lib/data/storage";
 import { cn } from "@/lib/utils";
 import type { NotificationType } from "@/lib/data/types";
 
@@ -54,14 +53,20 @@ function formatTimeAgo(dateStr: string): string {
 
 export function NotificationBell() {
   const { user } = useAuth();
-  const { notifications, unreadCount, markAsRead, refresh } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAll } =
+    useNotifications();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const handleMarkAllRead = () => {
     if (user) {
-      markAllNotificationsRead(user.id);
-      refresh();
+      markAllAsRead();
+    }
+  };
+
+  const handleClearAll = () => {
+    if (user) {
+      clearAll();
     }
   };
 
@@ -69,7 +74,7 @@ export function NotificationBell() {
     setMounted(true);
   }, []);
 
-  const recent = notifications.slice(0, 8);
+  const recent = notifications.slice(0, 25);
 
   if (!mounted) {
     return (
@@ -104,96 +109,134 @@ export function NotificationBell() {
 
       <PopoverContent
         align="end"
-        className="w-80 p-0 bg-card text-card-foreground shadow-lg sm:w-96"
+        sideOffset={8}
+        className="w-[min(24rem,calc(100vw-1rem))] overflow-hidden border-border bg-card p-0 text-card-foreground shadow-lg sm:w-[26rem]"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="font-semibold text-foreground">Notifications</h3>
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <>
+        <div className="flex max-h-[min(34rem,75vh)] flex-col">
+          <div className="shrink-0 border-b border-border px-3 py-3 sm:px-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold text-foreground">Notifications</h3>
+              {unreadCount > 0 ? (
                 <Badge variant="secondary" className="bg-gold/10 text-gold-dark">
                   {unreadCount} new
                 </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground">All caught up</span>
+              )}
+            </div>
+
+            {recent.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAllRead}
+                  disabled={unreadCount === 0}
+                  className="h-7 px-2 text-xs"
+                >
+                  <CheckCheck className="mr-1 h-3 w-3" />
+                  Mark all read
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleMarkAllRead}
-                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={handleClearAll}
+                  className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <CheckCheck className="mr-1 h-3 w-3" />
-                  Read all
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Clear all
                 </Button>
-              </>
+              </div>
             )}
           </div>
-        </div>
 
-        {recent.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 px-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
-              <Bell className="h-5 w-5 text-muted-foreground" />
+          {recent.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No notifications yet</p>
             </div>
-            <p className="text-sm text-muted-foreground">No notifications yet</p>
+          ) : (
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="divide-y divide-border">
+                {recent.map((notification) => {
+                  const Icon = typeIcons[notification.type] || MessageCircle;
+                  const colorClass = typeColors[notification.type] || typeColors.general;
+
+                  return (
+                    <div
+                      key={notification.id}
+                      className={cn(
+                        "flex items-start gap-2 px-3 py-3 sm:px-4",
+                        !notification.read && "bg-gold/5"
+                      )}
+                    >
+                      <button
+                        onClick={() => {
+                          if (!notification.read) {
+                            markAsRead(notification.id);
+                          }
+                        }}
+                        className="flex min-w-0 flex-1 items-start gap-3 text-left transition-colors hover:text-foreground"
+                      >
+                        <div
+                          className={cn(
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                            colorClass
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p
+                              className={cn(
+                                "line-clamp-1 text-sm",
+                                !notification.read ? "font-semibold text-foreground" : "text-foreground"
+                              )}
+                            >
+                              {notification.title}
+                            </p>
+                            {!notification.read && (
+                              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />
+                            )}
+                          </div>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                            {notification.message}
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {formatTimeAgo(notification.createdAt)}
+                          </p>
+                        </div>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteNotification(notification.id)}
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete notification</span>
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          )}
+
+          <Separator />
+
+          <div className="shrink-0 p-2">
+            <Link
+              href="/notifications"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-gold transition-colors hover:bg-gold/10"
+            >
+              View all notifications
+            </Link>
           </div>
-        ) : (
-          <ScrollArea className="max-h-[360px]">
-            <div className="divide-y divide-border">
-              {recent.map((notification) => {
-                const Icon = typeIcons[notification.type] || MessageCircle;
-                const colorClass = typeColors[notification.type] || typeColors.general;
-
-                return (
-                  <button
-                    key={notification.id}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead(notification.id);
-                      }
-                    }}
-                    className={cn(
-                      "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50",
-                      !notification.read && "bg-gold/5"
-                    )}
-                  >
-                    <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", colorClass)}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className={cn(
-                          "text-sm line-clamp-1",
-                          !notification.read ? "font-semibold text-foreground" : "text-foreground"
-                        )}>
-                          {notification.title}
-                        </p>
-                        {!notification.read && (
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold" />
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {formatTimeAgo(notification.createdAt)}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        )}
-
-        <Separator />
-
-        <div className="p-2">
-          <Link
-            href="/notifications"
-            onClick={() => setOpen(false)}
-            className="flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-gold hover:bg-gold/10 transition-colors"
-          >
-            View all notifications
-          </Link>
         </div>
       </PopoverContent>
     </Popover>

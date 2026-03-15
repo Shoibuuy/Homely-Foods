@@ -12,6 +12,8 @@ import {
   ChevronDown,
   UtensilsCrossed,
   House,
+  Bell,
+  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -207,6 +209,20 @@ export function SiteHeader() {
                 </DropdownMenuItem>
 
                 <DropdownMenuItem asChild>
+                  <Link href="/notifications" className="cursor-pointer">
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notifications
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href="/referrals" className="cursor-pointer">
+                    <Users className="mr-2 h-4 w-4" />
+                    Referrals
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
                   <Link href="/addresses" className="cursor-pointer">
                     <House className="mr-2 h-4 w-4" />
                     My Addresses
@@ -368,6 +384,19 @@ export function SiteHeader() {
                         )}
                       >
                         Notifications
+                      </Link>
+
+                      <Link
+                        href="/referrals"
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          pathname === "/referrals"
+                            ? "bg-gold/10 text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        Referrals
                       </Link>
 
                       <Link

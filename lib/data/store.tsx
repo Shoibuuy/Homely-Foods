@@ -32,10 +32,13 @@ import {
   addNotification as storeAddNotification,
   getNotifications,
   generateId,
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteNotification as deleteNotificationFromStorage,
+  clearAllNotifications,
 } from "./storage";
 
 const STORE_EVENT = "homely_store_changed";
-const NOTIFICATIONS_KEY = "homely_notifications";
 
 // ─── Auth Context ────────────────────────────────────────────────
 interface AuthContextType {
@@ -50,7 +53,7 @@ interface AuthContextType {
     email: string;
     phone: string;
     password: string;
-  }) => { success: boolean; error?: string };
+  }) => { success: boolean; user?: User; error?: string };
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   addHP: (amount: number, description: string) => void;
@@ -135,7 +138,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       email: string;
       phone: string;
       password: string;
-    }): { success: boolean; error?: string } => {
+    }): { success: boolean; user?: User; error?: string } => {
       const users = getUsers();
       const normalizedEmail = data.email.toLowerCase().trim();
 
@@ -162,7 +165,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(newUser);
       setUser(newUser);
 
-      return { success: true };
+      return { success: true, user: newUser };
     },
     []
   );
@@ -438,6 +441,7 @@ interface NotificationContextType {
   notifications: AppNotification[];
   unreadCount: number;
   markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
   deleteNotification: (id: string) => void;
   clearAll: () => void;
   refresh: () => void;
@@ -501,81 +505,44 @@ function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = useCallback(
     (id: string) => {
-      setNotifications((prev) => {
-        const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
-
-        if (typeof window !== "undefined" && user) {
-          try {
-            const raw = localStorage.getItem(NOTIFICATIONS_KEY);
-            const all = raw
-              ? (JSON.parse(raw) as AppNotification[])
-              : [];
-
-            const updatedAll = all.map((n) =>
-              n.userId === user.id && n.id === id ? { ...n, read: true } : n
-            );
-
-            localStorage.setItem(
-              NOTIFICATIONS_KEY,
-              JSON.stringify(updatedAll)
-            );
-
-            window.dispatchEvent(
-              new CustomEvent(STORE_EVENT, {
-                detail: { scope: "notifications" },
-              })
-            );
-          } catch {
-            // ignore storage parsing/write issues
-          }
-        }
-
-        return next;
-      });
+      if (!user) return;
+      markNotificationRead(user.id, id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     },
     [user]
   );
 
+  const markAllAsRead = useCallback(() => {
+    if (!user) return;
+    markAllNotificationsRead(user.id);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, [user]);
+
   const deleteNotificationFn = useCallback(
     (id: string) => {
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem(NOTIFICATIONS_KEY);
-          const all = raw ? (JSON.parse(raw) as AppNotification[]) : [];
-          const updated = all.filter((n) => n.id !== id);
-          localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-          window.dispatchEvent(
-            new CustomEvent(STORE_EVENT, { detail: { scope: "notifications" } })
-          );
-        } catch {
-          // ignore
-        }
-      }
+      deleteNotificationFromStorage(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     },
     []
   );
 
   const clearAll = useCallback(() => {
-    if (typeof window !== "undefined" && user) {
-      try {
-        const raw = localStorage.getItem(NOTIFICATIONS_KEY);
-        const all = raw ? (JSON.parse(raw) as AppNotification[]) : [];
-        const updated = all.filter((n) => n.userId !== user.id);
-        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-        window.dispatchEvent(
-          new CustomEvent(STORE_EVENT, { detail: { scope: "notifications" } })
-        );
-      } catch {
-        // ignore
-      }
-    }
+    if (!user) return;
+    clearAllNotifications(user.id);
     setNotifications([]);
   }, [user]);
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, markAsRead, deleteNotification: deleteNotificationFn, clearAll, refresh }}
+      value={{
+        notifications,
+        unreadCount,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification: deleteNotificationFn,
+        clearAll,
+        refresh,
+      }}
     >
       {children}
     </NotificationContext.Provider>

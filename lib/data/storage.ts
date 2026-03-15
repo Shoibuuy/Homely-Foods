@@ -948,6 +948,15 @@ export function markAllNotificationsRead(userId: string): void {
   emitStoreChange("notifications");
 }
 
+export function markNotificationRead(userId: string, notificationId: string): void {
+  const all = getItem<AppNotification[]>(KEYS.NOTIFICATIONS, []);
+  const updated = all.map((n) =>
+    n.userId === userId && n.id === notificationId ? { ...n, read: true } : n
+  );
+  setItem(KEYS.NOTIFICATIONS, updated);
+  emitStoreChange("notifications");
+}
+
 export function deleteNotification(notificationId: string): void {
   const all = getItem<AppNotification[]>(KEYS.NOTIFICATIONS, []);
   setItem(KEYS.NOTIFICATIONS, all.filter((n) => n.id !== notificationId));

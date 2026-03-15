@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth, useNotifications } from "@/lib/data/store";
-import { markAllNotificationsRead } from "@/lib/data/storage";
 import { cn } from "@/lib/utils";
 import type { NotificationType, AppNotification } from "@/lib/data/types";
 import { toast } from "sonner";
@@ -114,7 +113,8 @@ function groupByDate(notifications: AppNotification[]): Map<string, AppNotificat
 
 export default function NotificationsPage() {
   const { user } = useAuth();
-  const { notifications, unreadCount, markAsRead, deleteNotification, clearAll, refresh } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAll } =
+    useNotifications();
 
   const [mounted, setMounted] = useState(false);
   const [typeFilter, setTypeFilter] = useState<NotificationType | "all">("all");
@@ -139,8 +139,7 @@ export default function NotificationsPage() {
 
   const handleMarkAllRead = () => {
     if (!user) return;
-    markAllNotificationsRead(user.id);
-    refresh();
+    markAllAsRead();
     toast.success("All notifications marked as read");
   };
 
