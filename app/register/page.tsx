@@ -77,10 +77,17 @@ export default function RegisterPage() {
       if (result.success && result.user) {
         // Process referral if valid
         if (referralStatus === "valid" && referrerId) {
-          processReferral(referrerId, result.user.id);
-          toast.success("Welcome to HOMELY FOODS!", {
-            description: "Your account has been created. You earned 10 HP (5 welcome + 5 referral bonus)!",
-          });
+          const referralResult = processReferral(referrerId, result.user.id);
+          if (referralResult.success) {
+            toast.success("Welcome to HOMELY FOODS!", {
+              description: "Your account has been created. You earned 10 HP (5 welcome + 5 referral bonus)!",
+            });
+          } else {
+            toast.success("Welcome to HOMELY FOODS!", {
+              description: "Your account has been created. You earned 5 HP as a welcome bonus.",
+            });
+            toast.message(referralResult.error || "Referral bonus was not applied.");
+          }
         } else {
           toast.success("Welcome to HOMELY FOODS!", {
             description: "Your account has been created. You earned 5 HP as a welcome bonus!",

@@ -528,6 +528,7 @@ export const defaultHPConfig: HPConfig = {
 export const sampleReviews: Review[] = [
   {
     id: "rev-1",
+    type: "experience",
     userId: "user-sample-1",
     userName: "Sarah M.",
     rating: 5,
@@ -537,6 +538,7 @@ export const sampleReviews: Review[] = [
   },
   {
     id: "rev-2",
+    type: "experience",
     userId: "user-sample-2",
     userName: "Ahmed K.",
     rating: 5,
@@ -546,6 +548,7 @@ export const sampleReviews: Review[] = [
   },
   {
     id: "rev-3",
+    type: "experience",
     userId: "user-sample-3",
     userName: "Priya R.",
     rating: 4,
@@ -555,6 +558,7 @@ export const sampleReviews: Review[] = [
   },
   {
     id: "rev-4",
+    type: "experience",
     userId: "user-sample-4",
     userName: "James L.",
     rating: 5,

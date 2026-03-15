@@ -985,44 +985,68 @@ export function validateReferralCode(code: string): { valid: boolean; referrerId
   return { valid: false, referrerId: null };
 }
 
-export function processReferral(referrerId: string, newUserId: string): void {
-  // Create referral record
-  const referral = createReferral(referrerId, newUserId);
-  
-  // Award bonus HP to referrer
+export function processReferral(
+  referrerId: string,
+  newUserId: string
+): { success: boolean; error?: string } {
+  if (!referrerId || !newUserId) {
+    return { success: false, error: "Missing referral data." };
+  }
+
+  if (referrerId === newUserId) {
+    return { success: false, error: "Self-referral is not allowed." };
+  }
+
   const users = getUsers();
   const referrer = users.find((u) => u.id === referrerId);
-  if (referrer) {
-    const updatedReferrer = { ...referrer, hpBalance: referrer.hpBalance + 10 };
-    updateUser(updatedReferrer);
-    recordHPBonus(referrerId, 10, "Referral bonus - new friend signed up");
-    addNotification({
-      id: generateId("notif"),
-      userId: referrerId,
-      type: "points",
-      title: "Referral Bonus Earned",
-      message: `You earned 10 HP from referral ${referral.referralCode}.`,
-      createdAt: new Date().toISOString(),
-      read: false,
-    });
-  }
-  
-  // Award bonus HP to new user
   const newUser = users.find((u) => u.id === newUserId);
-  if (newUser) {
-    const updatedNewUser = { ...newUser, hpBalance: newUser.hpBalance + 5 };
-    updateUser(updatedNewUser);
-    recordHPBonus(newUserId, 5, "Welcome bonus - referred by a friend");
-    addNotification({
-      id: generateId("notif"),
-      userId: newUserId,
-      type: "points",
-      title: "Referral Welcome Bonus",
-      message: "You earned 5 bonus HP for signing up with a referral code.",
-      createdAt: new Date().toISOString(),
-      read: false,
-    });
+
+  if (!referrer || !newUser) {
+    return { success: false, error: "Invalid referral users." };
   }
+
+  const referrals = getItem<Referral[]>(KEYS.REFERRALS, []);
+  const alreadyUsedByNewUser = referrals.some((r) => r.referredUserId === newUserId);
+  if (alreadyUsedByNewUser) {
+    return { success: false, error: "Referral already used for this account." };
+  }
+
+  const duplicatePair = referrals.some(
+    (r) => r.referrerId === referrerId && r.referredUserId === newUserId
+  );
+  if (duplicatePair) {
+    return { success: false, error: "Referral already credited." };
+  }
+
+  const referral = createReferral(referrerId, newUserId);
+
+  const updatedReferrer = { ...referrer, hpBalance: referrer.hpBalance + 10 };
+  updateUser(updatedReferrer);
+  recordHPBonus(referrerId, 10, "Referral bonus - new friend signed up");
+  addNotification({
+    id: generateId("notif"),
+    userId: referrerId,
+    type: "points",
+    title: "Referral Bonus Earned",
+    message: `You earned 10 HP from referral ${referral.referralCode}.`,
+    createdAt: new Date().toISOString(),
+    read: false,
+  });
+
+  const updatedNewUser = { ...newUser, hpBalance: newUser.hpBalance + 5 };
+  updateUser(updatedNewUser);
+  recordHPBonus(newUserId, 5, "Welcome bonus - referred by a friend");
+  addNotification({
+    id: generateId("notif"),
+    userId: newUserId,
+    type: "points",
+    title: "Referral Welcome Bonus",
+    message: "You earned 5 bonus HP for signing up with a referral code.",
+    createdAt: new Date().toISOString(),
+    read: false,
+  });
+
+  return { success: true };
 }
 
 export function settleOrderHP(params: {
